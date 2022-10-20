@@ -1,0 +1,160 @@
+package markout
+
+import (
+	"errors"
+	"io"
+)
+
+type base_blocks struct {
+	out             io.Writer
+	disable_counter int
+	eols            int   // number of eols pending
+	sect_levels     []int // section level counters
+	list_levels     []int // list level counters (-1 for unordered levels)
+	table           table_grid
+}
+
+func (bb *base_blocks) current_mode() bmode {
+	if len(bb.table) > 0 {
+		return mtable
+	} else if len(bb.list_levels) > 0 {
+		return mlist
+	} else {
+		return mflow
+	}
+}
+
+func (bb *base_blocks) check_mode(wanted bmode) {
+	m := bb.current_mode()
+	if wanted&m == 0 {
+		panic("markout: command is not allowed within the current block mode")
+	}
+}
+
+func (bb *base_blocks) want_nextln() {
+	if bb.eols == 0 || bb.enabled() {
+		bb.eols = 1
+	}
+}
+
+func (bb *base_blocks) want_emptyln() {
+	bb.eols = 2
+}
+
+func wrepeat(w io.Writer, nbytes int, sequence []byte) {
+	if nbytes == 0 {
+		return
+	}
+	if len(sequence) == 0 {
+		const space_sequence = "                "
+		sequence = []byte(space_sequence)
+	}
+	n := len(sequence)
+	for nbytes >= n {
+		w.Write(sequence)
+		nbytes -= n
+	}
+	w.Write(sequence[:nbytes])
+}
+
+func (bb *base_blocks) enabled() bool {
+	return bb.disable_counter == 0
+}
+
+func (bb *base_blocks) push_disabled() {
+	bb.disable_counter++
+}
+
+func (bb *base_blocks) pop_disabled() {
+	if bb.disable_counter > 0 {
+		bb.disable_counter--
+	}
+}
+
+func (bb *base_blocks) close() error {
+	if len(bb.sect_levels) != 1 {
+		return errSectLevel
+	} else if len(bb.list_levels) > 0 {
+		return errListLevel
+	} else {
+		bb.do_nextline()
+		bb.eols = 0
+		return nil
+	}
+}
+
+func (bb *base_blocks) begin_table(columns ...raw_bytes) {
+	hh := []raw_bytes{}
+	hh = append(hh, columns...)
+	bb.table = append(bb.table, hh)
+}
+
+func (bb *base_blocks) table_row(cells ...raw_bytes) {
+	if bb.enabled() {
+		cc := []raw_bytes{}
+		cc = append(cc, cells...)
+		bb.table = append(bb.table, cc)
+	}
+}
+
+func (bb *base_blocks) do_nextline() {
+	n := bb.eols
+	if n > 2 {
+		n = 2
+	}
+	bb.out.Write([]byte("\n\n")[:bb.eols])
+}
+
+func (bb *base_blocks) putblock(s raw_bytes) {
+	if bb.enabled() {
+		bb.do_nextline()
+		bb.out.Write(s)
+	}
+}
+
+func (bb *base_blocks) putblock_ex(indent_level int, prefix string, s raw_bytes, postfix string) {
+	if bb.enabled() {
+		bb.do_nextline()
+		wrepeat(bb.out, 2*indent_level, nil)
+		bb.out.Write([]byte(prefix))
+		bb.out.Write(s)
+		bb.out.Write([]byte(postfix))
+	}
+}
+
+func (bb *base_blocks) sect_level_in() {
+	bb.sect_levels = append(bb.sect_levels, 0)
+}
+
+func (bb *base_blocks) sect_level_out() {
+	n := len(bb.sect_levels)
+	bb.sect_levels = bb.sect_levels[:n-1]
+}
+
+func (bb *base_blocks) sect_counters() []int {
+	return bb.sect_levels
+}
+
+func (bb *base_blocks) list_level_in(initial int) {
+	bb.list_levels = append(bb.list_levels, initial)
+}
+
+func (bb *base_blocks) list_level_out() {
+	n := len(bb.list_levels)
+	bb.list_levels = bb.list_levels[:n-1]
+}
+
+func (bb *base_blocks) list_counters() []int {
+	return bb.list_levels
+}
+
+var errSectLevel = errors.New("markout: invalid section level (unpaired section level calls)")
+var errListLevel = errors.New("markout: invalid list level (unpaired list level calls)")
+
+func pick[T any](use_second bool, first, second T) T {
+	if use_second {
+		return second
+	} else {
+		return first
+	}
+}

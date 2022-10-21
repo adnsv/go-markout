@@ -9,19 +9,19 @@ type html_blocks struct {
 	list_title_class string
 }
 
-func (bb *html_blocks) para(s raw_bytes) {
+func (bb *html_blocks) para(s RawContent) {
 	bb.putblock_ex(0, "<p>", s, "</p>")
 	bb.want_emptyln()
 }
 
-func (bb *html_blocks) heading(counters []int, s raw_bytes) {
+func (bb *html_blocks) heading(counters []int, s RawContent) {
 	level := len(counters)
 	t := fmt.Sprintf("<h%d>", level)
 	bb.putblock_ex(0, t, s, "</"+t[1:])
 	bb.want_emptyln()
 }
 
-func (bb *html_blocks) list_title(s raw_bytes) {
+func (bb *html_blocks) list_title(s RawContent) {
 	if bb.list_title_class != "" {
 		bb.putblock_ex(0, "<p classs=\""+bb.list_title_class+"\">", s, "</p>")
 	} else {
@@ -50,7 +50,7 @@ func (bb *html_blocks) list_level_done(counters []int) {
 	}
 }
 
-func (bb *html_blocks) list_item(counters []int, s raw_bytes) {
+func (bb *html_blocks) list_item(counters []int, s RawContent) {
 	if bb.enabled() {
 		n := len(counters) - 1
 		bb.putblock_ex(n+1, "<li>", s, "</li>")

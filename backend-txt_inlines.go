@@ -8,11 +8,11 @@ import (
 
 type txt_inlines struct {
 	base_inlines
-	pending_link *raw_bytes
+	pending_link *RawContent
 }
 
-func txt_scramble(s string) raw_bytes {
-	return raw_bytes(s)
+func txt_scramble(s string) RawContent {
+	return RawContent(s)
 }
 
 func (ii *txt_inlines) current_mode() imode {
@@ -43,13 +43,13 @@ func (ii *txt_inlines) close() error {
 	}
 }
 
-func (ii *txt_inlines) put_raw(b *bytes.Buffer, s raw_bytes) {
+func (ii *txt_inlines) put_raw(b *bytes.Buffer, s RawContent) {
 	b.Write(s)
 }
 func (ii *txt_inlines) put_str(b *bytes.Buffer, s string) {
 	b.Write(txt_scramble(s))
 }
-func (ii *txt_inlines) code_raw(b *bytes.Buffer, s raw_bytes) {
+func (ii *txt_inlines) code_raw(b *bytes.Buffer, s RawContent) {
 	b.WriteByte('`')
 	b.Write(s)
 	b.WriteByte('`')
@@ -85,7 +85,7 @@ func (ii *txt_inlines) end_styled(b *bytes.Buffer) {
 		b.WriteString("*")
 	}
 }
-func (ii *txt_inlines) begin_link(b *bytes.Buffer, url raw_bytes) {
+func (ii *txt_inlines) begin_link(b *bytes.Buffer, url RawContent) {
 	b.WriteByte('[')
 	ii.pending_link = &url
 }
@@ -96,7 +96,7 @@ func (ii *txt_inlines) end_link(b *bytes.Buffer) {
 	ii.pending_link = nil
 }
 
-func (ii *txt_inlines) simple_link(b *bytes.Buffer, caption raw_bytes, url raw_bytes) {
+func (ii *txt_inlines) simple_link(b *bytes.Buffer, caption RawContent, url RawContent) {
 	if len(caption) == 0 || slices.Equal(caption, url) {
 		b.Write(url)
 	} else {

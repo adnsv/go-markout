@@ -100,7 +100,7 @@ func NewTXT(out io.Writer, opts TXTOptions) Writer {
 		bb.listitem_prefix = "* "
 	}
 	if opts.PutBOM {
-		bb.out.Write(raw_bytes("uFEFF"))
+		bb.out.Write(RawContent("uFEFF"))
 	}
 
 	bb.sect_level_in()
@@ -143,10 +143,10 @@ func NewHTML(out io.Writer, opts HTMLOptions) Writer {
 	}
 
 	if opts.PutBOM {
-		bb.out.Write(raw_bytes("uFEFF"))
+		bb.out.Write(RawContent("uFEFF"))
 	}
 	bb.begin_html()
-	bb.head(r.do_print(opts.Title), raw_bytes(opts.Style))
+	bb.head(r.do_print(opts.Title), RawContent(opts.Style))
 	bb.begin_body()
 	bb.sect_level_in()
 
@@ -166,7 +166,7 @@ func NewMD(out io.Writer, opts MDOptions) Writer {
 	bb := &md_blocks{}
 	bb.out = out
 	if opts.PutBOM {
-		bb.out.Write(raw_bytes("uFEFF"))
+		bb.out.Write(RawContent("uFEFF"))
 	}
 	bb.sect_level_in()
 	return &fw_impl{

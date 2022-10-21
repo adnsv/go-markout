@@ -83,15 +83,15 @@ func (bb *base_blocks) close() error {
 	}
 }
 
-func (bb *base_blocks) begin_table(columns ...raw_bytes) {
-	hh := []raw_bytes{}
+func (bb *base_blocks) begin_table(columns ...RawContent) {
+	hh := []RawContent{}
 	hh = append(hh, columns...)
 	bb.table = append(bb.table, hh)
 }
 
-func (bb *base_blocks) table_row(cells ...raw_bytes) {
+func (bb *base_blocks) table_row(cells ...RawContent) {
 	if bb.enabled() {
-		cc := []raw_bytes{}
+		cc := []RawContent{}
 		cc = append(cc, cells...)
 		bb.table = append(bb.table, cc)
 	}
@@ -105,14 +105,14 @@ func (bb *base_blocks) do_nextline() {
 	bb.out.Write([]byte("\n\n")[:bb.eols])
 }
 
-func (bb *base_blocks) putblock(s raw_bytes) {
+func (bb *base_blocks) putblock(s RawContent) {
 	if bb.enabled() {
 		bb.do_nextline()
 		bb.out.Write(s)
 	}
 }
 
-func (bb *base_blocks) putblock_ex(indent_level int, prefix string, s raw_bytes, postfix string) {
+func (bb *base_blocks) putblock_ex(indent_level int, prefix string, s RawContent, postfix string) {
 	if bb.enabled() {
 		bb.do_nextline()
 		wrepeat(bb.out, 2*indent_level, nil)

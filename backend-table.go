@@ -6,13 +6,13 @@ import (
 	"github.com/adnsv/go-markout/wcwidth"
 )
 
-type table_grid [][]raw_bytes
+type table_grid [][]RawContent
 
-func (t table_grid) measure_cell(s raw_bytes) int {
+func (t table_grid) measure_cell(s RawContent) int {
 	return wcwidth.StringCells(string(s))
 }
 
-func (t table_grid) measure_cells(cc []raw_bytes, col_widths *[]int) (widths []int) {
+func (t table_grid) measure_cells(cc []RawContent, col_widths *[]int) (widths []int) {
 	r := make([]int, len(cc))
 	for i := range r {
 		w := t.measure_cell(cc[i])
@@ -34,7 +34,7 @@ type table_decor struct {
 	l, c, r []byte
 }
 
-func (t table_grid) print_row(w io.Writer, cc []raw_bytes, decor *table_decor, col_widths []int) {
+func (t table_grid) print_row(w io.Writer, cc []RawContent, decor *table_decor, col_widths []int) {
 	w.Write(decor.l)
 	for i := range cc {
 		if i > 0 {

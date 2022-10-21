@@ -10,7 +10,8 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-// Printer is a generic interface for writing inline content.
+// Printer is an interface used in callbacks and custom marshalers for writing
+// inline content.
 type Printer interface {
 	// Low-level string content
 	WriteString(string)
@@ -64,9 +65,9 @@ func (p *printer_impl) CodeRawBytes(s []byte) {
 func (p *printer_impl) BeginLink(url string) {
 	p.ii.check_not_mode(ilink)
 	if p.url_filter != nil {
-		p.ii.begin_link(p.buf, raw_bytes(p.url_filter(url)))
+		p.ii.begin_link(p.buf, RawContent(p.url_filter(url)))
 	} else {
-		p.ii.begin_link(p.buf, raw_bytes(url))
+		p.ii.begin_link(p.buf, RawContent(url))
 	}
 }
 func (p *printer_impl) EndLink() {
@@ -98,9 +99,9 @@ func (p *printer_impl) SimpleLink(a any, url string) {
 	scratch := bytes.Buffer{}
 	to_buffer(&scratch, p.ii, p.url_filter, a)
 	if p.url_filter != nil {
-		p.ii.simple_link(p.buf, scratch.Bytes(), raw_bytes(p.url_filter(url)))
+		p.ii.simple_link(p.buf, scratch.Bytes(), RawContent(p.url_filter(url)))
 	} else {
-		p.ii.simple_link(p.buf, scratch.Bytes(), raw_bytes(url))
+		p.ii.simple_link(p.buf, scratch.Bytes(), RawContent(url))
 	}
 }
 func (p *printer_impl) Styled(sty Style, a any) {
@@ -184,16 +185,16 @@ func handle_print_stringlike(p Printer, val reflect.Value, typ reflect.Type) (bo
 func handle_print_simple(p Printer, val reflect.Value, typ reflect.Type) (bool, error) {
 	switch val.Kind() {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		p.WriteRawBytes(raw_bytes(strconv.FormatInt(val.Int(), 10)))
+		p.WriteRawBytes(RawContent(strconv.FormatInt(val.Int(), 10)))
 		return true, nil
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
-		p.WriteRawBytes(raw_bytes(strconv.FormatUint(val.Uint(), 10)))
+		p.WriteRawBytes(RawContent(strconv.FormatUint(val.Uint(), 10)))
 		return true, nil
 	case reflect.Float32, reflect.Float64:
-		p.WriteRawBytes(raw_bytes(strconv.FormatFloat(val.Float(), 'g', -1, val.Type().Bits())))
+		p.WriteRawBytes(RawContent(strconv.FormatFloat(val.Float(), 'g', -1, val.Type().Bits())))
 		return true, nil
 	case reflect.Bool:
-		p.WriteRawBytes(raw_bytes(strconv.FormatBool(val.Bool())))
+		p.WriteRawBytes(RawContent(strconv.FormatBool(val.Bool())))
 		return true, nil
 	}
 	return false, nil
@@ -203,7 +204,7 @@ func print_any(p Printer, a any) error {
 
 	// handle RawStr first
 	switch v := a.(type) {
-	case raw_bytes:
+	case RawContent:
 		p.WriteRawBytes(v)
 		return nil
 	case link_wrapper:
@@ -288,7 +289,7 @@ func fmt_args(scratch *bytes.Buffer, ii inlines, uf url_filter, args ...any) []a
 		scratch.Reset()
 
 		switch v := r[i].(type) {
-		case raw_bytes:
+		case RawContent:
 			p.WriteRawBytes(v)
 			r[i] = scratch.String()
 			continue
@@ -339,7 +340,7 @@ func fmt_args(scratch *bytes.Buffer, ii inlines, uf url_filter, args ...any) []a
 			if err != nil {
 				p.WriteString("#ERR")
 			}
-			r[i] = raw_bytes(scratch.String())
+			r[i] = RawContent(scratch.String())
 		}
 	}
 	return r

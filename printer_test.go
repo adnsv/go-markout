@@ -47,7 +47,7 @@ func Test_to_buffer(t *testing.T) {
 		{"int", 42, "42", "42", "42"},
 		{"bool", true, "true", "true", "true"},
 		{"floating point", 3.14159, "3.14159", "3.14159", "3.14159"},
-		{"raw", raw_bytes("<>@#$%`@"), "<>@#$%`@", "<>@#$%`@", "<>@#$%`@"},
+		{"raw", RawContent("<>@#$%`@"), "<>@#$%`@", "<>@#$%`@", "<>@#$%`@"},
 		{"simple-link-full", Link("c", "url"), "<a href=\"url\">c</a>", "[c](url)", "[c](url)"},
 		{"simple-link-urls", Link("url", "url"), "<a href=\"url\">url</a>", "[url]", "url"},
 		{"simple-link-nocaption", Link("", "url"), "<a href=\"url\">url</a>", "[url]", "url"},

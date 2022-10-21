@@ -11,7 +11,7 @@ const want_backslash_escaped = "\\`*_{}[]()#+-.!<>"
 
 type md_inlines struct {
 	base_inlines
-	pending_link *raw_bytes
+	pending_link *RawContent
 }
 
 func md_scramble(b *bytes.Buffer, s string) {
@@ -77,13 +77,13 @@ func (ii *md_inlines) close() error {
 	}
 }
 
-func (ii *md_inlines) put_raw(b *bytes.Buffer, s raw_bytes) {
+func (ii *md_inlines) put_raw(b *bytes.Buffer, s RawContent) {
 	b.Write(s)
 }
 func (ii *md_inlines) put_str(b *bytes.Buffer, s string) {
 	md_scramble(b, s)
 }
-func (ii *md_inlines) code_raw(b *bytes.Buffer, s raw_bytes) {
+func (ii *md_inlines) code_raw(b *bytes.Buffer, s RawContent) {
 	b.WriteByte('`')
 	b.Write(s)
 	b.WriteByte('`')
@@ -117,7 +117,7 @@ func (ii *md_inlines) end_styled(b *bytes.Buffer) {
 		b.WriteString("</em>")
 	}
 }
-func (ii *md_inlines) begin_link(b *bytes.Buffer, url raw_bytes) {
+func (ii *md_inlines) begin_link(b *bytes.Buffer, url RawContent) {
 	b.WriteByte('[')
 	ii.pending_link = &url
 }
@@ -127,7 +127,7 @@ func (ii *md_inlines) end_link(b *bytes.Buffer) {
 	b.WriteByte(')')
 	ii.pending_link = nil
 }
-func (ii *md_inlines) simple_link(b *bytes.Buffer, caption raw_bytes, url raw_bytes) {
+func (ii *md_inlines) simple_link(b *bytes.Buffer, caption RawContent, url RawContent) {
 	if len(caption) == 0 || slices.Equal(caption, url) {
 		b.WriteByte('[')
 		b.Write(url)

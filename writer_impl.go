@@ -20,7 +20,7 @@ func (w *fw_impl) Close() error {
 	}
 }
 
-func (w *fw_impl) do_print(a any) raw_bytes {
+func (w *fw_impl) do_print(a any) RawContent {
 	w.p.buf.Reset()
 	if w.blocks.enabled() {
 		w.p.Print(a)
@@ -28,7 +28,7 @@ func (w *fw_impl) do_print(a any) raw_bytes {
 	return w.p.buf.Bytes()
 }
 
-func (w *fw_impl) do_printf(format string, args ...any) raw_bytes {
+func (w *fw_impl) do_printf(format string, args ...any) RawContent {
 	w.p.buf.Reset()
 	if w.blocks.enabled() {
 		w.p.Printf(format, args...)
@@ -36,14 +36,14 @@ func (w *fw_impl) do_printf(format string, args ...any) raw_bytes {
 	return w.p.buf.Bytes()
 }
 
-func (w *fw_impl) do_section(s raw_bytes) {
+func (w *fw_impl) do_section(s RawContent) {
 	w.blocks.check_mode(mflow)
 	cc := w.blocks.sect_counters()
 	cc[len(cc)-1]++
 	w.blocks.heading(cc, s)
 }
 
-func (w *fw_impl) do_listitem(s raw_bytes) {
+func (w *fw_impl) do_listitem(s RawContent) {
 	w.blocks.check_mode(mlist)
 	cc := w.blocks.list_counters()
 	n := len(cc) - 1
@@ -88,7 +88,7 @@ func (w *fw_impl) Sectionf(format string, args ...any) {
 
 func (w *fw_impl) BeginTable(first_column any, other_columns ...any) {
 	w.blocks.check_mode(mflow)
-	rr := make([]raw_bytes, 0, 1+len(other_columns))
+	rr := make([]RawContent, 0, 1+len(other_columns))
 	rr = append(rr, slices.Clone(w.do_print(first_column)))
 	for _, c := range other_columns {
 		rr = append(rr, slices.Clone(w.do_print(c)))
@@ -99,7 +99,7 @@ func (w *fw_impl) BeginTable(first_column any, other_columns ...any) {
 func (w *fw_impl) TableRow(first_cell any, other_cells ...any) {
 	w.blocks.check_mode(mtable)
 	if w.blocks.enabled() {
-		rr := make([]raw_bytes, 0, 1+len(other_cells))
+		rr := make([]RawContent, 0, 1+len(other_cells))
 		rr = append(rr, slices.Clone(w.do_print(first_cell)))
 		for _, c := range other_cells {
 			rr = append(rr, slices.Clone(w.do_print(c)))

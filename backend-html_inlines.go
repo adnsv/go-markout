@@ -38,13 +38,13 @@ func (ii *html_inlines) close() error {
 	}
 }
 
-func (ii *html_inlines) put_raw(b *bytes.Buffer, s raw_bytes) {
+func (ii *html_inlines) put_raw(b *bytes.Buffer, s RawContent) {
 	b.Write(s)
 }
 func (ii *html_inlines) put_str(b *bytes.Buffer, s string) {
 	html_scramble(b, s)
 }
-func (ii *html_inlines) code_raw(b *bytes.Buffer, s raw_bytes) {
+func (ii *html_inlines) code_raw(b *bytes.Buffer, s RawContent) {
 	b.WriteString("<code>")
 	b.Write(s)
 	b.WriteString("</code>")
@@ -80,7 +80,7 @@ func (ii *html_inlines) end_styled(b *bytes.Buffer) {
 		b.WriteString("</em>")
 	}
 }
-func (ii *html_inlines) begin_link(b *bytes.Buffer, url raw_bytes) {
+func (ii *html_inlines) begin_link(b *bytes.Buffer, url RawContent) {
 	fmt.Fprintf(b, "<a href=\"%s\">", url)
 	ii.in_link = true
 }

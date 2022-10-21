@@ -9,12 +9,12 @@ type md_blocks struct {
 	base_blocks
 }
 
-func (bb *md_blocks) para(s raw_bytes) {
+func (bb *md_blocks) para(s RawContent) {
 	bb.putblock(s)
 	bb.want_emptyln()
 }
 
-func (bb *md_blocks) heading(counters []int, s raw_bytes) {
+func (bb *md_blocks) heading(counters []int, s RawContent) {
 	if bb.enabled() {
 		level := len(counters)
 		b := bytes.Buffer{}
@@ -26,7 +26,7 @@ func (bb *md_blocks) heading(counters []int, s raw_bytes) {
 	bb.want_emptyln()
 }
 
-func (bb *md_blocks) list_title(s raw_bytes) {
+func (bb *md_blocks) list_title(s RawContent) {
 	bb.putblock(s)
 	bb.want_emptyln()
 }
@@ -42,7 +42,7 @@ func (bb *md_blocks) list_level_done(counters []int) {
 	}
 }
 
-func (bb *md_blocks) list_item(counters []int, s raw_bytes) {
+func (bb *md_blocks) list_item(counters []int, s RawContent) {
 	if bb.enabled() {
 		level := len(counters)
 		counter := counters[level-1]

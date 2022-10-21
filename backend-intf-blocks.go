@@ -19,22 +19,22 @@ type blocks interface {
 	push_disabled() // disable actual output (stacked state)
 	pop_disabled()
 
-	para(raw_bytes)
+	para(RawContent)
 
-	heading(counters []int, s raw_bytes)
+	heading(counters []int, s RawContent)
 	sect_level_in()
 	sect_level_out()
 	sect_counters() []int
 
-	begin_table(columns ...raw_bytes)
-	table_row(cells ...raw_bytes)
+	begin_table(columns ...RawContent)
+	table_row(cells ...RawContent)
 	end_table()
 
-	list_title(raw_bytes)
+	list_title(RawContent)
 	list_level_in(int) // initial counter 0 for ordered, -1 for unordered
 	list_level_out()
 	list_counters() []int
-	list_item(counters []int, s raw_bytes)
+	list_item(counters []int, s RawContent)
 	list_level_start(counters []int)
 	list_level_done(counters []int)
 	// todo: code blocks, etc.

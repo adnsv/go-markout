@@ -14,12 +14,12 @@ type txt_blocks struct {
 	listitem_prefix     string
 }
 
-func (bb *txt_blocks) para(s raw_bytes) {
+func (bb *txt_blocks) para(s RawContent) {
 	bb.putblock(s)
 	bb.want_emptyln()
 }
 
-func (bb *txt_blocks) heading(counters []int, s raw_bytes) {
+func (bb *txt_blocks) heading(counters []int, s RawContent) {
 	if bb.enabled() {
 		level := len(counters)
 
@@ -51,7 +51,7 @@ func (bb *txt_blocks) heading(counters []int, s raw_bytes) {
 	bb.want_emptyln()
 }
 
-func (bb *txt_blocks) list_title(s raw_bytes) {
+func (bb *txt_blocks) list_title(s RawContent) {
 	bb.putblock(s)
 	bb.want_nextln()
 }
@@ -67,7 +67,7 @@ func (bb *txt_blocks) list_level_done(counters []int) {
 	}
 }
 
-func (bb *txt_blocks) list_item(counters []int, s raw_bytes) {
+func (bb *txt_blocks) list_item(counters []int, s RawContent) {
 	if bb.enabled() {
 		level := len(counters)
 		counter := counters[level-1]

@@ -3,6 +3,7 @@ package markout
 type bmode int
 
 const (
+	mnone = bmode(0)
 	mflow = bmode(1 << iota)
 	mtable
 	mlist
@@ -11,14 +12,14 @@ const (
 // blocks is an internal interface to be implemented by markout backends
 // for structural block level formatting.
 type blocks interface {
-	close() error
-
-	check_mode(bmode)
+	current_mode() bmode
+	check_mode(bmode) bool
 
 	enabled() bool
 	push_disabled() // disable actual output (stacked state)
 	pop_disabled()
 
+	close()
 	para(RawContent)
 
 	heading(counters []int, s RawContent)

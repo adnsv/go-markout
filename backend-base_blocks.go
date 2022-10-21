@@ -19,16 +19,31 @@ func (bb *base_blocks) current_mode() bmode {
 		return mtable
 	} else if len(bb.list_levels) > 0 {
 		return mlist
-	} else {
+	} else if len(bb.sect_levels) > 0 {
 		return mflow
+	} else {
+		return mnone // aborted
 	}
 }
 
-func (bb *base_blocks) check_mode(wanted bmode) {
+func (bb *base_blocks) check_mode(wanted bmode) bool {
 	m := bb.current_mode()
-	if wanted&m == 0 {
+	if m == mnone {
+		return false
+	}
+	if wanted&m != 0 {
+		return true
+	} else {
 		panic("markout: command is not allowed within the current block mode")
 	}
+}
+
+func (bb *base_blocks) close() {
+	bb.table = bb.table[:0]
+	bb.sect_levels = bb.sect_levels[:0]
+	bb.list_levels = bb.list_levels[:0]
+	bb.do_nextline()
+	bb.eols = 0
 }
 
 func (bb *base_blocks) want_nextln() {
@@ -68,18 +83,6 @@ func (bb *base_blocks) push_disabled() {
 func (bb *base_blocks) pop_disabled() {
 	if bb.disable_counter > 0 {
 		bb.disable_counter--
-	}
-}
-
-func (bb *base_blocks) close() error {
-	if len(bb.sect_levels) != 1 {
-		return errSectLevel
-	} else if len(bb.list_levels) > 0 {
-		return errListLevel
-	} else {
-		bb.do_nextline()
-		bb.eols = 0
-		return nil
 	}
 }
 

@@ -20,7 +20,7 @@ func ExampleNewMultiWriter() {
 		li.ListItem("item 1")
 		li.ListItem("item 2")
 	})
-	w.Table([]any{"h1", "h2"}, func(row TableWriter) {
+	w.Table([]any{"h1", "h2"}, func(row TableRowWriter) {
 		row("c1", "c2")
 		row("c3", "cell4")
 	})

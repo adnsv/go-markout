@@ -26,9 +26,16 @@ func (w *MultiWriter) EnableOutput() {
 	}
 }
 
-func (w *MultiWriter) Close() error {
-	w.targets = map[Writer]struct{}{}
-	return nil
+func (w *MultiWriter) CloseEx(ps func(ParagraphWriter)) {
+	for t := range w.targets {
+		t.CloseEx(ps)
+	}
+}
+
+func (w *MultiWriter) Close() {
+	for t := range w.targets {
+		t.Close()
+	}
 }
 
 func (w *MultiWriter) Para(a any) {
@@ -133,7 +140,7 @@ func (w *MultiWriter) EndList() {
 	}
 }
 
-func (w *MultiWriter) Table(columns []any, rows func(cb TableWriter)) {
+func (w *MultiWriter) Table(columns []any, rows func(cb TableRowWriter)) {
 	if len(columns) == 0 || rows == nil {
 		return
 	}

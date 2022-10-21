@@ -5,22 +5,9 @@ import (
 	"io"
 )
 
-// TableWriter is a callback for writing table rows.
-type TableWriter = func(first_cell any, other_cells ...any)
-
-// Writer is a high level interface for writing markout documents in all
-// supported formats.
-type Writer interface {
-	ListWriter
-	io.Closer
-
-	DisableOutput()
-	EnableOutput()
-
-	// Para writes paragraph block.
-	Para(a any)
-	Paraf(format string, args ...any)
-
+// SectionWriter is an interface that supports structured sectioning of a
+// document.
+type SectionWriter = interface {
 	// BeginSection writes the section heading block and increments section level
 	// counter. Each BeginSection() call must be followed by matching EndSection()
 	BeginSection(a any)
@@ -32,7 +19,20 @@ type Writer interface {
 	// Section writes section heading without incrementing section level counter.
 	Section(a any)
 	Sectionf(format string, args ...any)
+}
 
+// TableRowWriter is a callback for writing table rows.
+type TableRowWriter = func(first_cell any, other_cells ...any)
+
+// ParagraphWriter interface supports writing plain paragraphs.
+type ParagraphWriter = interface {
+	// Para writes paragraph block.
+	Para(a any)
+	Paraf(format string, args ...any)
+}
+
+// TableWriter interface supports writing of tabular data.
+type TableWriter = interface {
 	// BeginTable starts table mode.
 	//   - only TableRow() calls are supported while in tablt mode.
 	//   - use EndTable() to exit from the table mode.
@@ -42,8 +42,12 @@ type Writer interface {
 
 	// Callback-based table writing method that begins a new table, writes rows
 	// into it with callback, then calls EndTable.
-	Table(columns []any, rows func(callback TableWriter))
+	Table(columns []any, rows func(callback TableRowWriter))
+}
 
+// ListWriter is an interface for writing items and child lists into list
+// blocks.
+type ListWriter interface {
 	// ListTitle writes paragraph block that acts as a title preceeding a list.
 	ListTitle(a any)
 	ListTitlef(format string, args ...any)
@@ -54,11 +58,7 @@ type Writer interface {
 	BeginOList()
 	BeginUList()
 	EndList()
-}
 
-// ListWriter is an interface for writing items and child lists into list
-// blocks.
-type ListWriter interface {
 	// ListItem writes an item into the list block. Must be called within the
 	// BeginList()/EndList() fragment.
 	ListItem(a any)
@@ -70,6 +70,21 @@ type ListWriter interface {
 	// BeginList/EndList blocks.
 	OList(func(ListWriter))
 	UList(func(ListWriter))
+}
+
+// Writer is a high level interface for writing markout documents in all
+// supported formats.
+type Writer interface {
+	SectionWriter
+	ParagraphWriter
+	ListWriter
+	TableWriter
+
+	Close()
+	CloseEx(ps func(ParagraphWriter))
+
+	DisableOutput()
+	EnableOutput()
 }
 
 // Quotation marks
@@ -104,10 +119,9 @@ func NewTXT(out io.Writer, opts TXTOptions) Writer {
 	}
 
 	bb.sect_level_in()
-	return &fw_impl{
-		blocks:   bb,
-		p:        printer_impl{ii: ii, buf: &bytes.Buffer{}, url_filter: opts.URLFilter},
-		on_close: bb.close,
+	return &writer_impl{
+		bb: bb,
+		p:  printer_impl{ii: ii, buf: &bytes.Buffer{}, url_filter: opts.URLFilter},
 	}
 }
 
@@ -128,17 +142,12 @@ func NewHTML(out io.Writer, opts HTMLOptions) Writer {
 	bb.out = out
 	bb.list_title_class = opts.ListTitleClass
 
-	r := &fw_impl{
-		blocks: bb,
-		p:      printer_impl{ii: ii, buf: &bytes.Buffer{}, url_filter: opts.URLFilter},
-		on_close: func() error {
-			err := bb.close()
-			if err != nil {
-				return err
-			}
+	r := &writer_impl{
+		bb: bb,
+		p:  printer_impl{ii: ii, buf: &bytes.Buffer{}, url_filter: opts.URLFilter},
+		on_close: func() {
 			bb.end_body()
 			bb.end_html()
-			return nil
 		},
 	}
 
@@ -169,9 +178,8 @@ func NewMD(out io.Writer, opts MDOptions) Writer {
 		bb.out.Write(RawContent("uFEFF"))
 	}
 	bb.sect_level_in()
-	return &fw_impl{
-		blocks:   bb,
-		p:        printer_impl{ii: ii, buf: &bytes.Buffer{}, url_filter: opts.URLFilter},
-		on_close: bb.close,
+	return &writer_impl{
+		bb: bb,
+		p:  printer_impl{ii: ii, buf: &bytes.Buffer{}, url_filter: opts.URLFilter},
 	}
 }

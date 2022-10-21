@@ -1,190 +1,239 @@
 package markout
 
-import "golang.org/x/exp/slices"
+import (
+	"golang.org/x/exp/slices"
+)
 
-// fw_impl implements structured writing to the supported markout backends.
-type fw_impl struct {
-	on_close func() error
-	blocks   blocks // block-level formatting
+// writer_impl implements structured writing to the supported markout backends.
+type writer_impl struct {
+	on_close func()
+	bb       blocks // block-level formatting
 	p        printer_impl
 }
 
 // Close finalizes writer output.
-func (w *fw_impl) Close() error {
-	if w.on_close != nil {
-		err := w.on_close()
-		w.on_close = nil
-		return err
-	} else {
-		return nil
+func (w *writer_impl) CloseEx(postscriptum func(ParagraphWriter)) {
+	if w.bb.current_mode() == mtable {
+		w.bb.end_table()
 	}
+
+	for w.bb.current_mode() == mlist {
+		w.bb.list_level_done(w.bb.list_counters())
+		w.bb.list_level_out()
+	}
+
+	if len(w.bb.sect_counters()) > 0 {
+		w.bb.sect_level_out()
+	}
+
+	if postscriptum != nil {
+		postscriptum(w)
+	}
+
+	if w.on_close != nil {
+		w.on_close()
+		w.on_close = nil
+	}
+
+	w.bb.close()
 }
 
-func (w *fw_impl) do_print(a any) RawContent {
+func (w *writer_impl) Close() {
+	w.CloseEx(nil)
+}
+
+func (w *writer_impl) do_print(a any) RawContent {
 	w.p.buf.Reset()
-	if w.blocks.enabled() {
+	if w.bb.enabled() {
 		w.p.Print(a)
 	}
 	return w.p.buf.Bytes()
 }
 
-func (w *fw_impl) do_printf(format string, args ...any) RawContent {
+func (w *writer_impl) do_printf(format string, args ...any) RawContent {
 	w.p.buf.Reset()
-	if w.blocks.enabled() {
+	if w.bb.enabled() {
 		w.p.Printf(format, args...)
 	}
 	return w.p.buf.Bytes()
 }
 
-func (w *fw_impl) do_section(s RawContent) {
-	w.blocks.check_mode(mflow)
-	cc := w.blocks.sect_counters()
+func (w *writer_impl) handle_section(s RawContent) {
+	w.bb.check_mode(mflow)
+	cc := w.bb.sect_counters()
 	cc[len(cc)-1]++
-	w.blocks.heading(cc, s)
+	w.bb.heading(cc, s)
 }
 
-func (w *fw_impl) do_listitem(s RawContent) {
-	w.blocks.check_mode(mlist)
-	cc := w.blocks.list_counters()
+func (w *writer_impl) handle_listitem(s RawContent) {
+	w.bb.check_mode(mlist)
+	cc := w.bb.list_counters()
 	n := len(cc) - 1
 	if cc[n] >= 0 {
 		cc[n]++
 	}
-	w.blocks.list_item(cc, s)
+	w.bb.list_item(cc, s)
 }
 
-func (w *fw_impl) Para(a any) {
-	w.blocks.check_mode(mflow)
-	w.blocks.para(w.do_print(a))
-}
-
-func (w *fw_impl) Paraf(format string, args ...any) {
-	w.blocks.check_mode(mflow)
-	w.blocks.para(w.do_printf(format, args...))
-}
-
-func (w *fw_impl) BeginSection(a any) {
-	w.do_section(w.do_print(a))
-	w.blocks.sect_level_in()
-}
-
-func (w *fw_impl) BeginSectionf(format string, args ...any) {
-	w.do_section(w.do_printf(format, args...))
-	w.blocks.sect_level_in()
-}
-
-func (w *fw_impl) EndSection() {
-	w.blocks.check_mode(mflow)
-	w.blocks.sect_level_out()
-}
-
-func (w *fw_impl) Section(a any) {
-	w.do_section(w.do_print(a))
-}
-
-func (w *fw_impl) Sectionf(format string, args ...any) {
-	w.do_section(w.do_printf(format, args...))
-}
-
-func (w *fw_impl) BeginTable(first_column any, other_columns ...any) {
-	w.blocks.check_mode(mflow)
-	rr := make([]RawContent, 0, 1+len(other_columns))
-	rr = append(rr, slices.Clone(w.do_print(first_column)))
-	for _, c := range other_columns {
-		rr = append(rr, slices.Clone(w.do_print(c)))
+func (w *writer_impl) Para(a any) {
+	if w.bb.check_mode(mflow) {
+		w.bb.para(w.do_print(a))
 	}
-	w.blocks.begin_table(rr...)
 }
 
-func (w *fw_impl) TableRow(first_cell any, other_cells ...any) {
-	w.blocks.check_mode(mtable)
-	if w.blocks.enabled() {
+func (w *writer_impl) Paraf(format string, args ...any) {
+	if w.bb.check_mode(mflow) {
+		w.bb.para(w.do_printf(format, args...))
+	}
+}
+
+func (w *writer_impl) BeginSection(a any) {
+	if w.bb.check_mode(mflow) {
+		w.handle_section(w.do_print(a))
+		w.bb.sect_level_in()
+	}
+}
+
+func (w *writer_impl) BeginSectionf(format string, args ...any) {
+	if w.bb.check_mode(mflow) {
+		w.handle_section(w.do_printf(format, args...))
+		w.bb.sect_level_in()
+	}
+}
+
+func (w *writer_impl) EndSection() {
+	if w.bb.check_mode(mflow) {
+		w.bb.sect_level_out()
+	}
+}
+
+func (w *writer_impl) Section(a any) {
+	if w.bb.check_mode(mflow) {
+		w.handle_section(w.do_print(a))
+	}
+}
+
+func (w *writer_impl) Sectionf(format string, args ...any) {
+	if w.bb.check_mode(mflow) {
+		w.handle_section(w.do_printf(format, args...))
+	}
+}
+
+func (w *writer_impl) BeginTable(first_column any, other_columns ...any) {
+	if w.bb.check_mode(mflow) {
+		rr := make([]RawContent, 0, 1+len(other_columns))
+		rr = append(rr, slices.Clone(w.do_print(first_column)))
+		for _, c := range other_columns {
+			rr = append(rr, slices.Clone(w.do_print(c)))
+		}
+		w.bb.begin_table(rr...)
+	}
+}
+
+func (w *writer_impl) TableRow(first_cell any, other_cells ...any) {
+	if w.bb.check_mode(mtable) && w.bb.enabled() {
 		rr := make([]RawContent, 0, 1+len(other_cells))
 		rr = append(rr, slices.Clone(w.do_print(first_cell)))
 		for _, c := range other_cells {
 			rr = append(rr, slices.Clone(w.do_print(c)))
 		}
-		w.blocks.table_row(rr...)
+		w.bb.table_row(rr...)
 	}
 }
 
-func (w *fw_impl) EndTable() {
-	w.blocks.check_mode(mtable)
-	w.blocks.end_table()
-}
-
-func (w *fw_impl) ListTitle(a any) {
-	w.blocks.check_mode(mflow)
-	w.blocks.list_title(w.do_print(a))
-}
-
-func (w *fw_impl) ListTitlef(format string, args ...any) {
-	w.blocks.check_mode(mflow)
-	w.blocks.list_title(w.do_printf(format, args...))
-}
-
-func (w *fw_impl) BeginOList() {
-	w.blocks.check_mode(mflow | mlist)
-	w.blocks.list_level_in(0)
-	w.blocks.list_level_start(w.blocks.list_counters())
-}
-
-func (w *fw_impl) BeginUList() {
-	w.blocks.check_mode(mflow | mlist)
-	w.blocks.list_level_in(-1)
-	w.blocks.list_level_start(w.blocks.list_counters())
-}
-
-func (w *fw_impl) ListItem(a any) {
-	w.do_listitem(w.do_print(a))
-}
-
-func (w *fw_impl) ListItemf(format string, args ...any) {
-	w.do_listitem(w.do_printf(format, args...))
-}
-
-func (w *fw_impl) EndList() {
-	w.blocks.check_mode(mlist)
-	w.blocks.list_level_done(w.blocks.list_counters())
-	w.blocks.list_level_out()
-}
-
-func (w *fw_impl) Table(columns []any, rows func(TableWriter)) {
-	if rows == nil {
-		return
+func (w *writer_impl) EndTable() {
+	if w.bb.check_mode(mtable) {
+		w.bb.end_table()
 	}
-	w.BeginTable(columns)
-	defer w.EndTable()
+}
 
-	on_row := func(first_cell any, other_cells ...any) {
-		w.TableRow(first_cell, other_cells...)
+func (w *writer_impl) ListTitle(a any) {
+	if w.bb.check_mode(mflow) {
+		w.bb.list_title(w.do_print(a))
 	}
-
-	rows(on_row)
 }
 
-func (w *fw_impl) OList(f func(iw ListWriter)) {
-	if f == nil {
-		return
+func (w *writer_impl) ListTitlef(format string, args ...any) {
+	if w.bb.check_mode(mflow) {
+		w.bb.list_title(w.do_printf(format, args...))
 	}
-	w.BeginOList()
-	defer w.EndList()
-	f(w)
 }
 
-func (w *fw_impl) UList(f func(iw ListWriter)) {
-	if f == nil {
-		return
+func (w *writer_impl) BeginOList() {
+	if w.bb.check_mode(mflow | mlist) {
+		w.bb.list_level_in(0)
+		w.bb.list_level_start(w.bb.list_counters())
 	}
-	w.BeginUList()
-	defer w.EndList()
-	f(w)
 }
 
-func (w *fw_impl) DisableOutput() {
-	w.blocks.push_disabled()
+func (w *writer_impl) BeginUList() {
+	if w.bb.check_mode(mflow | mlist) {
+		w.bb.list_level_in(-1)
+		w.bb.list_level_start(w.bb.list_counters())
+	}
 }
 
-func (w *fw_impl) EnableOutput() {
-	w.blocks.pop_disabled()
+func (w *writer_impl) ListItem(a any) {
+	if w.bb.check_mode(mlist) {
+		w.handle_listitem(w.do_print(a))
+	}
+}
+
+func (w *writer_impl) ListItemf(format string, args ...any) {
+	if w.bb.check_mode(mlist) {
+		w.handle_listitem(w.do_printf(format, args...))
+	}
+}
+
+func (w *writer_impl) EndList() {
+	if w.bb.check_mode(mlist) {
+		w.bb.list_level_done(w.bb.list_counters())
+		w.bb.list_level_out()
+	}
+}
+
+func (w *writer_impl) Table(columns []any, rows func(TableRowWriter)) {
+	if w.bb.check_mode(mflow) && w.bb.enabled() {
+		if rows == nil {
+			return
+		}
+		w.BeginTable(columns)
+		defer w.EndTable()
+
+		on_row := func(first_cell any, other_cells ...any) {
+			w.TableRow(first_cell, other_cells...)
+		}
+
+		rows(on_row)
+	}
+}
+
+func (w *writer_impl) OList(f func(iw ListWriter)) {
+	if w.bb.check_mode(mflow|mlist) && w.bb.enabled() {
+		if f == nil {
+			return
+		}
+		w.BeginOList()
+		defer w.EndList()
+		f(w)
+	}
+}
+
+func (w *writer_impl) UList(f func(iw ListWriter)) {
+	if w.bb.check_mode(mflow|mlist) && w.bb.enabled() {
+		if f == nil {
+			return
+		}
+		w.BeginUList()
+		defer w.EndList()
+		f(w)
+	}
+}
+
+func (w *writer_impl) DisableOutput() {
+	w.bb.push_disabled()
+}
+
+func (w *writer_impl) EnableOutput() {
+	w.bb.pop_disabled()
 }

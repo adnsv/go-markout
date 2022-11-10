@@ -34,7 +34,7 @@ type ParagraphWriter = interface {
 // TableWriter interface supports writing of tabular data.
 type TableWriter = interface {
 	// BeginTable starts table mode.
-	//   - only TableRow() calls are supported while in tablt mode.
+	//   - only TableRow() calls are supported in table mode.
 	//   - use EndTable() to exit from the table mode.
 	BeginTable(first_column any, other_columns ...any)
 	TableRow(first_cell any, other_cells ...any)

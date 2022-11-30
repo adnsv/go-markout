@@ -42,6 +42,7 @@ func ExampleNewTXT() {
 	w.EndSection()
 	w.Section("ANOTHER SUBSECTION")
 	w.EndSection()
+	w.Codeblock("go", "codeblock\ncontent")
 	w.Close()
 	out := buf.String()
 	fmt.Println(out)
@@ -80,6 +81,10 @@ func ExampleNewTXT() {
 	//
 	// 1.2. ANOTHER SUBSECTION
 	// -----------------------
+	//
+	// codeblock
+	// content
+
 }
 
 func ExampleNewMD() {
@@ -112,6 +117,7 @@ func ExampleNewMD() {
 	w.BeginTable("th", "thead")
 	w.TableRow("tcell", "tcell")
 	w.EndTable()
+	w.Codeblock("go", "codeblock\ncontent")
 	w.Close()
 	out := buf.String()
 	fmt.Println(out)
@@ -134,6 +140,11 @@ func ExampleNewMD() {
 	// th | thead
 	// ---|------
 	// tcell | tcell
+	//
+	// ```go
+	// codeblock
+	// content
+	// ```
 }
 
 func ExampleNewHTML() {
@@ -162,6 +173,7 @@ func ExampleNewHTML() {
 	w.Section("SubSubSection")
 	w.EndSection()
 	w.EndSection()
+	w.Codeblock("go", "codeblock\ncontent")
 	w.Close()
 	out := buf.String()
 	fmt.Println(out)
@@ -197,6 +209,11 @@ func ExampleNewHTML() {
 	// <h2>SubSection</h2>
 	//
 	// <h3>SubSubSection</h3>
+	//
+	// <pre lang="go">
+	// codeblock
+	// content
+	// </pre>
 	//
 	// </body>
 	// </html>

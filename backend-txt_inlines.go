@@ -59,6 +59,9 @@ func (ii *txt_inlines) code_str(b *bytes.Buffer, s string) {
 	b.Write(txt_scramble(s))
 	b.WriteByte('`')
 }
+func (ii *txt_inlines) codeblock_line(b *bytes.Buffer, s string) {
+	b.Write([]byte(s))
+}
 func (ii *txt_inlines) begin_styled(b *bytes.Buffer, sty Style) {
 	ii.start_styled(sty)
 	switch sty {

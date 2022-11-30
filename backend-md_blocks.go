@@ -78,3 +78,16 @@ func (bb *md_blocks) end_table() {
 	}
 	bb.want_emptyln()
 }
+
+func (bb *md_blocks) codeblock(lang string, s RawContent) {
+	bb.want_emptyln()
+	bb.do_nextline()
+	bb.out.Write([]byte("```"))
+	if lang != "" {
+		bb.out.Write([]byte(lang))
+	}
+	bb.out.Write([]byte{'\n'})
+	bb.out.Write(s)
+	bb.out.Write([]byte("\n```"))
+	bb.want_emptyln()
+}

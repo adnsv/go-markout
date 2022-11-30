@@ -54,6 +54,9 @@ func (ii *html_inlines) code_str(b *bytes.Buffer, s string) {
 	html_scramble(b, s)
 	b.WriteString("</code>")
 }
+func (ii *html_inlines) codeblock_line(b *bytes.Buffer, s string) {
+	html_scramble(b, s)
+}
 func (ii *html_inlines) begin_styled(b *bytes.Buffer, sty Style) {
 	ii.start_styled(sty)
 	switch sty {

@@ -38,5 +38,6 @@ type blocks interface {
 	list_item(counters []int, s RawContent)
 	list_level_start(counters []int)
 	list_level_done(counters []int)
-	// todo: code blocks, etc.
+
+	codeblock(lang string, s RawContent)
 }

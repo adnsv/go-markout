@@ -31,3 +31,4 @@ func (w *null_impl) ListItem(a any)                                          {}
 func (w *null_impl) ListItemf(format string, args ...any)                    {}
 func (w *null_impl) OList(func(ListWriter))                                  {}
 func (w *null_impl) UList(func(ListWriter))                                  {}
+func (w *null_impl) Codeblock(lang string, lines string)                     {}

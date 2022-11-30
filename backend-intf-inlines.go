@@ -24,6 +24,7 @@ type inlines interface {
 	put_raw(*bytes.Buffer, RawContent)
 	code_str(*bytes.Buffer, string)
 	code_raw(*bytes.Buffer, RawContent)
+	codeblock_line(*bytes.Buffer, string)
 	begin_link(*bytes.Buffer, RawContent)
 	end_link(*bytes.Buffer)
 	begin_styled(b *bytes.Buffer, sty Style)

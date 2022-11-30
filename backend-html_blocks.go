@@ -82,3 +82,18 @@ func (bb *html_blocks) end_table() {
 	}
 	bb.want_emptyln()
 }
+
+func (bb *html_blocks) codeblock(lang string, s RawContent) {
+	bb.want_emptyln()
+	bb.do_nextline()
+	bb.out.Write([]byte("<pre"))
+	if lang != "" {
+		bb.out.Write([]byte(" lang=\""))
+		bb.out.Write([]byte(lang))
+		bb.out.Write([]byte{'"'})
+	}
+	bb.out.Write([]byte(">\n"))
+	bb.out.Write(s)
+	bb.out.Write([]byte("\n</pre>"))
+	bb.want_emptyln()
+}

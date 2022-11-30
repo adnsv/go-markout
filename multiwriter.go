@@ -177,3 +177,9 @@ func (w *MultiWriter) UList(items func(ListWriter)) {
 	}
 	items(w)
 }
+
+func (w *MultiWriter) Codeblock(lang string, lines string) {
+	for t := range w.targets {
+		t.Codeblock(lang, lines)
+	}
+}

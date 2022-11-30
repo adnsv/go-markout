@@ -103,3 +103,10 @@ func (bb *txt_blocks) end_table() {
 	bb.table = bb.table[:0]
 	bb.want_emptyln()
 }
+
+func (bb *txt_blocks) codeblock(lang string, s RawContent) {
+	bb.want_emptyln()
+	bb.do_nextline()
+	bb.out.Write(s)
+	bb.want_emptyln()
+}

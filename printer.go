@@ -20,6 +20,7 @@ type Printer interface {
 	// Code spans
 	CodeString(string)
 	CodeRawBytes([]byte)
+	CodeblockLine(string)
 
 	// Inline links
 	BeginLink(url string)
@@ -61,6 +62,10 @@ func (p *printer_impl) CodeString(s string) {
 func (p *printer_impl) CodeRawBytes(s []byte) {
 	p.ii.check_mode(iflow)
 	p.ii.code_raw(p.buf, s)
+}
+func (p *printer_impl) CodeblockLine(s string) {
+	p.ii.check_mode(iflow)
+	p.ii.codeblock_line(p.buf, s)
 }
 func (p *printer_impl) BeginLink(url string) {
 	p.ii.check_not_mode(ilink)

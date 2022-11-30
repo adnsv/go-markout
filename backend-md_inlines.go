@@ -91,6 +91,9 @@ func (ii *md_inlines) code_raw(b *bytes.Buffer, s RawContent) {
 func (ii *md_inlines) code_str(b *bytes.Buffer, s string) {
 	md_scramble_code(b, s)
 }
+func (ii *md_inlines) codeblock_line(b *bytes.Buffer, s string) {
+	b.Write([]byte(s)) // todo: deal with "```"
+}
 func (ii *md_inlines) begin_styled(b *bytes.Buffer, sty Style) {
 	ii.start_styled(sty)
 	switch sty {

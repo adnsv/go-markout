@@ -72,6 +72,10 @@ type ListWriter interface {
 	UList(func(ListWriter))
 }
 
+type CodeblockWriter interface {
+	Codeblock(lang string, lines string)
+}
+
 // Writer is a high level interface for writing markout documents in all
 // supported formats.
 type Writer interface {
@@ -79,6 +83,7 @@ type Writer interface {
 	ParagraphWriter
 	ListWriter
 	TableWriter
+	CodeblockWriter
 
 	Close()
 	CloseEx(ps func(ParagraphWriter))

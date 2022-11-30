@@ -1,6 +1,8 @@
 package markout
 
 import (
+	"strings"
+
 	"golang.org/x/exp/slices"
 )
 
@@ -236,4 +238,18 @@ func (w *writer_impl) DisableOutput() {
 
 func (w *writer_impl) EnableOutput() {
 	w.bb.pop_disabled()
+}
+
+func (w *writer_impl) Codeblock(lang string, lines string) {
+	w.bb.codeblock(lang, w.do_print(func(p Printer) {
+		for i, ln := range strings.Split(lines, "\n") {
+			if ln != "" && ln[len(ln)-1] == '\r' {
+				ln = ln[:len(ln)-1]
+			}
+			if i > 0 {
+				p.WriteRawBytes([]byte{'\n'})
+			}
+			p.CodeblockLine(ln)
+		}
+	}))
 }

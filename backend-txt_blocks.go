@@ -19,7 +19,7 @@ func (bb *txt_blocks) para(s RawContent) {
 	bb.want_emptyln()
 }
 
-func (bb *txt_blocks) heading(counters []int, s RawContent) {
+func (bb *txt_blocks) heading(counters []int, s RawContent, _ *Attrs) {
 	if bb.enabled() {
 		level := len(counters)
 

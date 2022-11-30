@@ -60,11 +60,11 @@ func (w *writer_impl) do_printf(format string, args ...any) RawContent {
 	return w.p.buf.Bytes()
 }
 
-func (w *writer_impl) handle_section(s RawContent) {
+func (w *writer_impl) handle_section(s RawContent, aa *Attrs) {
 	w.bb.check_mode(mflow)
 	cc := w.bb.sect_counters()
 	cc[len(cc)-1]++
-	w.bb.heading(cc, s)
+	w.bb.heading(cc, s, aa)
 }
 
 func (w *writer_impl) handle_listitem(s RawContent) {
@@ -91,14 +91,28 @@ func (w *writer_impl) Paraf(format string, args ...any) {
 
 func (w *writer_impl) BeginSection(a any) {
 	if w.bb.check_mode(mflow) {
-		w.handle_section(w.do_print(a))
+		w.handle_section(w.do_print(a), nil)
 		w.bb.sect_level_in()
 	}
 }
 
 func (w *writer_impl) BeginSectionf(format string, args ...any) {
 	if w.bb.check_mode(mflow) {
-		w.handle_section(w.do_printf(format, args...))
+		w.handle_section(w.do_printf(format, args...), nil)
+		w.bb.sect_level_in()
+	}
+}
+
+func (w *writer_impl) BeginAttrSection(aa Attrs, a any) {
+	if w.bb.check_mode(mflow) {
+		w.handle_section(w.do_print(a), &aa)
+		w.bb.sect_level_in()
+	}
+}
+
+func (w *writer_impl) BeginAttrSectionf(aa Attrs, format string, args ...any) {
+	if w.bb.check_mode(mflow) {
+		w.handle_section(w.do_printf(format, args...), &aa)
 		w.bb.sect_level_in()
 	}
 }
@@ -111,13 +125,25 @@ func (w *writer_impl) EndSection() {
 
 func (w *writer_impl) Section(a any) {
 	if w.bb.check_mode(mflow) {
-		w.handle_section(w.do_print(a))
+		w.handle_section(w.do_print(a), nil)
 	}
 }
 
 func (w *writer_impl) Sectionf(format string, args ...any) {
 	if w.bb.check_mode(mflow) {
-		w.handle_section(w.do_printf(format, args...))
+		w.handle_section(w.do_printf(format, args...), nil)
+	}
+}
+
+func (w *writer_impl) AttrSection(aa Attrs, a any) {
+	if w.bb.check_mode(mflow) {
+		w.handle_section(w.do_print(a), &aa)
+	}
+}
+
+func (w *writer_impl) AttrSectionf(aa Attrs, format string, args ...any) {
+	if w.bb.check_mode(mflow) {
+		w.handle_section(w.do_printf(format, args...), &aa)
 	}
 }
 

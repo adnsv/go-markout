@@ -22,7 +22,7 @@ type blocks interface {
 	close()
 	para(RawContent)
 
-	heading(counters []int, s RawContent)
+	heading(counters []int, s RawContent, aa *Attrs)
 	sect_level_in()
 	sect_level_out()
 	sect_counters() []int

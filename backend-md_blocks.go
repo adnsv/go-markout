@@ -2,7 +2,10 @@ package markout
 
 import (
 	"bytes"
+	"fmt"
+	"sort"
 	"strconv"
+	"strings"
 )
 
 type md_blocks struct {
@@ -14,13 +17,35 @@ func (bb *md_blocks) para(s RawContent) {
 	bb.want_emptyln()
 }
 
-func (bb *md_blocks) heading(counters []int, s RawContent) {
+func (bb *md_blocks) heading(counters []int, s RawContent, aa *Attrs) {
 	if bb.enabled() {
 		level := len(counters)
 		b := bytes.Buffer{}
 		wrepeat(&b, level, []byte("########"))
 		b.WriteByte(' ')
 		b.Write(s)
+		if aa != nil {
+			segments := []string{}
+			if aa.Identifier != "" {
+				segments = append(segments, "#"+aa.Identifier)
+			}
+			for _, c := range aa.Classes {
+				segments = append(segments, "."+c)
+			}
+			if len(aa.KeyVals) > 0 {
+				kvs := []string{}
+				for k, v := range aa.KeyVals {
+					kvs = append(kvs, fmt.Sprintf("%s=%s", k, v))
+				}
+				sort.Strings(kvs)
+				segments = append(segments, kvs...)
+			}
+			if len(segments) > 0 {
+				b.WriteString(" {")
+				b.WriteString(strings.Join(segments, " "))
+				b.WriteByte('}')
+			}
+		}
 		bb.putblock(b.Bytes())
 	}
 	bb.want_emptyln()

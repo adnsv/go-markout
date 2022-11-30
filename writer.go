@@ -12,6 +12,8 @@ type SectionWriter = interface {
 	// counter. Each BeginSection() call must be followed by matching EndSection()
 	BeginSection(a any)
 	BeginSectionf(format string, args ...any)
+	BeginAttrSection(aa Attrs, a any)
+	BeginAttrSectionf(aa Attrs, format string, args ...any)
 
 	// EndSection decrements section level counter.
 	EndSection()
@@ -19,6 +21,8 @@ type SectionWriter = interface {
 	// Section writes section heading without incrementing section level counter.
 	Section(a any)
 	Sectionf(format string, args ...any)
+	AttrSection(aa Attrs, a any)
+	AttrSectionf(aa Attrs, format string, args ...any)
 }
 
 // TableRowWriter is a callback for writing table rows.
@@ -90,6 +94,13 @@ type Writer interface {
 
 	DisableOutput()
 	EnableOutput()
+}
+
+// Attr can be used to add id, classes, and attributes to section headings.
+type Attrs struct {
+	Identifier string
+	Classes    []string
+	KeyVals    map[string]string
 }
 
 // Quotation marks

@@ -2,6 +2,9 @@ package markout
 
 import (
 	"fmt"
+	"sort"
+	"strconv"
+	"strings"
 )
 
 type html_blocks struct {
@@ -14,10 +17,30 @@ func (bb *html_blocks) para(s RawContent) {
 	bb.want_emptyln()
 }
 
-func (bb *html_blocks) heading(counters []int, s RawContent) {
+func (bb *html_blocks) heading(counters []int, s RawContent, aa *Attrs) {
 	level := len(counters)
-	t := fmt.Sprintf("<h%d>", level)
-	bb.putblock_ex(0, t, s, "</"+t[1:])
+	tagname := "h" + strconv.Itoa(level)
+	t := fmt.Sprintf("<%s", tagname)
+	if aa != nil {
+		if aa.Identifier != "" {
+			t += fmt.Sprintf(" id=\"%s\"", aa.Identifier)
+		}
+		if len(aa.Classes) > 0 {
+			t += fmt.Sprintf(" class=\"%s\"", strings.Join(aa.Classes, " "))
+		}
+		if len(aa.KeyVals) > 0 {
+			kk := make([]string, 0, len(aa.KeyVals))
+			for k := range aa.KeyVals {
+				kk = append(kk, k)
+			}
+			sort.Strings(kk)
+			for _, k := range kk {
+				t += fmt.Sprintf(" %s=\"%s\"", k, aa.KeyVals[k])
+			}
+		}
+	}
+	t += ">"
+	bb.putblock_ex(0, t, s, "</"+tagname+">")
 	bb.want_emptyln()
 }
 

@@ -62,6 +62,18 @@ func (w *MultiWriter) BeginSectionf(format string, args ...any) {
 	}
 }
 
+func (w *MultiWriter) BeginAttrSection(aa Attrs, a any) {
+	for t := range w.targets {
+		t.BeginAttrSection(aa, a)
+	}
+}
+
+func (w *MultiWriter) BeginAttrSectionf(aa Attrs, format string, args ...any) {
+	for t := range w.targets {
+		t.BeginAttrSectionf(aa, format, args...)
+	}
+}
+
 func (w *MultiWriter) EndSection() {
 	for t := range w.targets {
 		t.EndSection()
@@ -77,6 +89,18 @@ func (w *MultiWriter) Section(a any) {
 func (w *MultiWriter) Sectionf(format string, args ...any) {
 	for t := range w.targets {
 		t.Sectionf(format, args...)
+	}
+}
+
+func (w *MultiWriter) AttrSection(aa Attrs, a any) {
+	for t := range w.targets {
+		t.AttrSection(aa, a)
+	}
+}
+
+func (w *MultiWriter) AttrSectionf(aa Attrs, format string, args ...any) {
+	for t := range w.targets {
+		t.AttrSectionf(aa, format, args...)
 	}
 }
 

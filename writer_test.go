@@ -90,7 +90,7 @@ func ExampleNewTXT() {
 func ExampleNewMD() {
 	buf := bytes.Buffer{}
 	w := NewMD(&buf, MDOptions{PutBOM: false})
-	w.Section("Section")
+	w.BeginSection("Section")
 	w.Para("Para")
 	w.BeginUList()
 	w.ListItem("list item")
@@ -105,6 +105,8 @@ func ExampleNewMD() {
 	w.ListItem("last")
 	w.EndList()
 
+	w.AttrSection(Attrs{Identifier: "ident", Classes: []string{"cls"}}, "Subsection")
+
 	w.Para(func(p Printer) {
 		p.Print("Inline formatting: ")
 		p.BeginStyled(DoubleQuotedStyle)
@@ -118,6 +120,7 @@ func ExampleNewMD() {
 	w.TableRow("tcell", "tcell")
 	w.EndTable()
 	w.Codeblock("go", "codeblock\ncontent")
+	w.EndSection()
 	w.Close()
 	out := buf.String()
 	fmt.Println(out)
@@ -134,6 +137,8 @@ func ExampleNewMD() {
 	//   1. subitem1
 	//   2. <em>subitem2</em>
 	// - last
+	//
+	// ## Subsection {#ident .cls}
 	//
 	// Inline formatting: "<em>Hello</em>, <strong>World\!</strong>"
 	//
@@ -169,7 +174,7 @@ func ExampleNewHTML() {
 	w.TableRow("tcell", "tcell")
 	w.EndTable()
 	w.BeginSection("Section")
-	w.BeginSection("SubSection")
+	w.BeginAttrSection(Attrs{Identifier: "ident", Classes: []string{"cls"}}, "SubSection")
 	w.Section("SubSubSection")
 	w.EndSection()
 	w.EndSection()
@@ -206,7 +211,7 @@ func ExampleNewHTML() {
 	//
 	// <h1>Section</h1>
 	//
-	// <h2>SubSection</h2>
+	// <h2 id="ident" class="cls">SubSection</h2>
 	//
 	// <h3>SubSubSection</h3>
 	//

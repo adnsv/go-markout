@@ -28,11 +28,9 @@ func (w *null_impl) EndTable()                                               {}
 func (w *null_impl) Table(columns []any, rows func(callback TableRowWriter)) {}
 func (w *null_impl) ListTitle(any)                                           {}
 func (w *null_impl) ListTitlef(format string, args ...any)                   {}
-func (w *null_impl) BeginOList()                                             {}
-func (w *null_impl) BeginUList()                                             {}
+func (w *null_impl) BeginList(ListFlags)                                     {}
 func (w *null_impl) EndList()                                                {}
 func (w *null_impl) ListItem(any)                                            {}
 func (w *null_impl) ListItemf(format string, args ...any)                    {}
-func (w *null_impl) OList(func(ListWriter))                                  {}
-func (w *null_impl) UList(func(ListWriter))                                  {}
+func (w *null_impl) List(ListFlags, func(ListWriter))                        {}
 func (w *null_impl) Codeblock(lang string, lines string)                     {}

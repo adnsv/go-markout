@@ -20,7 +20,8 @@ func (w *writer_impl) CloseEx(postscriptum func(ParagraphWriter)) {
 	}
 
 	for w.bb.current_mode() == mlist {
-		w.bb.list_level_done(w.bb.list_counters())
+		cc, _ := w.bb.list_level_info()
+		w.bb.list_level_done(cc)
 		w.bb.list_level_out()
 	}
 
@@ -67,14 +68,14 @@ func (w *writer_impl) handle_section(s RawContent, aa *Attrs) {
 	w.bb.heading(cc, s, aa)
 }
 
-func (w *writer_impl) handle_listitem(s RawContent) {
+func (w *writer_impl) handle_listitem(s ...RawContent) {
 	w.bb.check_mode(mlist)
-	cc := w.bb.list_counters()
+	cc, broad := w.bb.list_level_info()
 	n := len(cc) - 1
 	if cc[n] >= 0 {
 		cc[n]++
 	}
-	w.bb.list_item(cc, s)
+	w.bb.list_item(cc, broad, s...)
 }
 
 func (w *writer_impl) Para(a any) {
@@ -187,17 +188,15 @@ func (w *writer_impl) ListTitlef(format string, args ...any) {
 	}
 }
 
-func (w *writer_impl) BeginOList() {
+func (w *writer_impl) BeginList(f ListFlags) {
 	if w.bb.check_mode(mflow | mlist) {
-		w.bb.list_level_in(0)
-		w.bb.list_level_start(w.bb.list_counters())
-	}
-}
-
-func (w *writer_impl) BeginUList() {
-	if w.bb.check_mode(mflow | mlist) {
-		w.bb.list_level_in(-1)
-		w.bb.list_level_start(w.bb.list_counters())
+		init := -1
+		if f&Ordered != 0 {
+			init = 0
+		}
+		w.bb.list_level_in(init, f&Broad != 0)
+		cc, _ := w.bb.list_level_info()
+		w.bb.list_level_start(cc)
 	}
 }
 
@@ -215,7 +214,8 @@ func (w *writer_impl) ListItemf(format string, args ...any) {
 
 func (w *writer_impl) EndList() {
 	if w.bb.check_mode(mlist) {
-		w.bb.list_level_done(w.bb.list_counters())
+		cc, _ := w.bb.list_level_info()
+		w.bb.list_level_done(cc)
 		w.bb.list_level_out()
 	}
 }
@@ -236,23 +236,12 @@ func (w *writer_impl) Table(columns []any, rows func(TableRowWriter)) {
 	}
 }
 
-func (w *writer_impl) OList(f func(iw ListWriter)) {
+func (w *writer_impl) List(flags ListFlags, f func(iw ListWriter)) {
 	if w.bb.check_mode(mflow|mlist) && w.bb.enabled() {
 		if f == nil {
 			return
 		}
-		w.BeginOList()
-		defer w.EndList()
-		f(w)
-	}
-}
-
-func (w *writer_impl) UList(f func(iw ListWriter)) {
-	if w.bb.check_mode(mflow|mlist) && w.bb.enabled() {
-		if f == nil {
-			return
-		}
-		w.BeginUList()
+		w.BeginList(flags)
 		defer w.EndList()
 		f(w)
 	}

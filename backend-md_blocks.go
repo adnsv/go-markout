@@ -67,16 +67,36 @@ func (bb *md_blocks) list_level_done(counters []int) {
 	}
 }
 
-func (bb *md_blocks) list_item(counters []int, s RawContent) {
+func (bb *md_blocks) list_item(counters []int, broad bool, s ...RawContent) {
 	if bb.enabled() {
 		level := len(counters)
 		counter := counters[level-1]
+
+		var ln RawContent
+		if len(s) > 0 {
+			ln = s[0]
+		} else {
+			ln = []byte{' '}
+		}
+
+		var ind int
 		if counter < 0 {
 			// unordered
-			bb.putblock_ex(level-1, "- ", s, "")
+			const prefix = "- "
+			bb.putblock_ex(level-1, prefix, ln, "")
+			ind = len(prefix)
 		} else {
 			// ordered
-			bb.putblock_ex(level-1, strconv.FormatInt(int64(counter), 10)+". ", s, "")
+			num := strconv.FormatInt(int64(counter), 10) + ". "
+			bb.putblock_ex(level-1, num, ln, "")
+			ind = len(num)
+		}
+		if len(s) > 1 {
+			ind_str := strings.Repeat(" ", ind)
+			for _, ln = range s[1:] {
+				bb.want_emptyln()
+				bb.putblock_ex(level-1, ind_str, ln, "")
+			}
 		}
 	}
 	bb.want_nextln()

@@ -32,10 +32,10 @@ type blocks interface {
 	end_table()
 
 	list_title(RawContent)
-	list_level_in(int) // initial counter 0 for ordered, -1 for unordered
+	list_level_in(initial int, broad bool) // initial counter 0 for ordered, -1 for unordered
 	list_level_out()
-	list_counters() []int
-	list_item(counters []int, s RawContent)
+	list_level_info() (counters []int, broad bool)
+	list_item(counters []int, broad bool, s ...RawContent)
 	list_level_start(counters []int)
 	list_level_done(counters []int)
 

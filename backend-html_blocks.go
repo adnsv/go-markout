@@ -73,10 +73,33 @@ func (bb *html_blocks) list_level_done(counters []int) {
 	}
 }
 
-func (bb *html_blocks) list_item(counters []int, s RawContent) {
+func (bb *html_blocks) list_item(counters []int, broad bool, s ...RawContent) {
 	if bb.enabled() {
 		n := len(counters) - 1
-		bb.putblock_ex(n+1, "<li>", s, "</li>")
+		switch len(s) {
+		case 0:
+			bb.putblock_ex(n+1, "<li>", nil, "</li>")
+		default:
+			for i, b := range s {
+				before := ""
+				after := ""
+				if broad || len(s) > 1 {
+					before = "<p>"
+					after = "</p>"
+				}
+				lvl := n + 1
+				if i == 0 {
+					before = "<li>" + before
+				} else {
+					lvl++
+				}
+				if i == len(s)-1 {
+					after += "</li>"
+				}
+				bb.putblock_ex(lvl, before, b, after)
+			}
+		}
+
 	}
 	bb.want_nextln()
 }

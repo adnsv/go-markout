@@ -49,6 +49,15 @@ type TableWriter = interface {
 	Table(columns []any, rows func(callback TableRowWriter))
 }
 
+type ListFlags uint
+
+const (
+	Unordered = ListFlags(0)
+	Tight     = ListFlags(0)
+	Ordered   = ListFlags(1)
+	Broad     = ListFlags(2)
+)
+
 // ListWriter is an interface for writing items and child lists into list
 // blocks.
 type ListWriter interface {
@@ -56,11 +65,10 @@ type ListWriter interface {
 	ListTitle(a any)
 	ListTitlef(format string, args ...any)
 
-	// BeginOList and BeginUList begins a list block (ordered or unourdered). If
-	// writer is already in list mode, this begins a child list. Each BeginList
-	// must be matched with EndList.
-	BeginOList()
-	BeginUList()
+	// BeginList begins a list block (ordered or unourdered). If writer is
+	// already in list mode, this begins a child list. Each BeginList must be
+	// matched with EndList.
+	BeginList(ListFlags)
 	EndList()
 
 	// ListItem writes an item into the list block. Must be called within the
@@ -72,8 +80,7 @@ type ListWriter interface {
 
 	// Callback-based list writing methods that automatically wrap items
 	// BeginList/EndList blocks.
-	OList(func(ListWriter))
-	UList(func(ListWriter))
+	List(ListFlags, func(ListWriter))
 }
 
 type CodeblockWriter interface {

@@ -57,14 +57,17 @@ func (bb *txt_blocks) list_title(s RawContent) {
 	bb.want_nextln()
 }
 
-func (bb *txt_blocks) list_level_start(counters []int) {
+func (bb *txt_blocks) list_level_start(counters []int, from_broad bool) {
+	if from_broad {
+		bb.want_emptyln()
+	}
 }
 
-func (bb *txt_blocks) list_level_done(counters []int) {
-	if len(counters) == 1 {
+func (bb *txt_blocks) list_level_done(counters []int, to_broad bool) {
+	if len(counters) == 1 || to_broad {
 		bb.want_emptyln()
 	} else {
-		bb.want_nextln()
+		bb.eols = 1
 	}
 }
 
@@ -97,7 +100,11 @@ func (bb *txt_blocks) list_item(counters []int, broad bool, s ...RawContent) {
 			}
 		}
 	}
-	bb.want_nextln()
+	if broad {
+		bb.want_emptyln()
+	} else {
+		bb.want_nextln()
+	}
 }
 
 func (bb *txt_blocks) end_table() {

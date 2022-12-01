@@ -1,6 +1,8 @@
 package markout
 
 import (
+	"bytes"
+	"fmt"
 	"strings"
 
 	"golang.org/x/exp/slices"
@@ -20,8 +22,9 @@ func (w *writer_impl) CloseEx(postscriptum func(ParagraphWriter)) {
 	}
 
 	for w.bb.current_mode() == mlist {
-		cc, _ := w.bb.list_level_info()
-		w.bb.list_level_done(cc)
+		cc, bb := w.bb.list_level_info()
+		into_broad := len(bb) >= 1 || bb[len(bb)-1]
+		w.bb.list_level_done(cc, into_broad)
 		w.bb.list_level_out()
 	}
 
@@ -70,12 +73,12 @@ func (w *writer_impl) handle_section(s RawContent, aa *Attrs) {
 
 func (w *writer_impl) handle_listitem(s ...RawContent) {
 	w.bb.check_mode(mlist)
-	cc, broad := w.bb.list_level_info()
+	cc, broads := w.bb.list_level_info()
 	n := len(cc) - 1
 	if cc[n] >= 0 {
 		cc[n]++
 	}
-	w.bb.list_item(cc, broad, s...)
+	w.bb.list_item(cc, broads[n], s...)
 }
 
 func (w *writer_impl) Para(a any) {
@@ -195,14 +198,46 @@ func (w *writer_impl) BeginList(f ListFlags) {
 			init = 0
 		}
 		w.bb.list_level_in(init, f&Broad != 0)
-		cc, _ := w.bb.list_level_info()
-		w.bb.list_level_start(cc)
+		cc, broads := w.bb.list_level_info()
+		w.bb.list_level_start(cc, len(broads) >= 2 && broads[len(broads)-2])
 	}
+}
+
+type multi_block_sink struct {
+	ii         inlines
+	url_filter url_filter
+	blocks     []RawContent
+}
+
+func (b *multi_block_sink) Para(a any) {
+	buf := &bytes.Buffer{}
+	to_buffer(buf, b.ii, b.url_filter, a)
+	b.blocks = append(b.blocks, buf.Bytes())
+}
+
+func (b *multi_block_sink) Paraf(format string, args ...any) {
+	buf := &bytes.Buffer{}
+	scratch := bytes.Buffer{}
+	b.ii.put_str(&scratch, format)
+	fmt_raw := scratch.String()
+	args_raw := fmt_args(&scratch, b.ii, b.url_filter, args...)
+	fmt.Fprintf(buf, fmt_raw, args_raw...)
+	b.blocks = append(b.blocks, buf.Bytes())
 }
 
 func (w *writer_impl) ListItem(a any) {
 	if w.bb.check_mode(mlist) {
-		w.handle_listitem(w.do_print(a))
+		if ml, ok := a.(func(w ParagraphWriter)); ok {
+			blocks := multi_block_sink{
+				ii:         w.p.ii,
+				url_filter: w.p.url_filter,
+			}
+			ml(&blocks)
+			w.handle_listitem(blocks.blocks...)
+
+		} else {
+			w.handle_listitem(w.do_print(a))
+		}
 	}
 }
 
@@ -214,8 +249,8 @@ func (w *writer_impl) ListItemf(format string, args ...any) {
 
 func (w *writer_impl) EndList() {
 	if w.bb.check_mode(mlist) {
-		cc, _ := w.bb.list_level_info()
-		w.bb.list_level_done(cc)
+		cc, broads := w.bb.list_level_info()
+		w.bb.list_level_done(cc, len(broads) >= 2 && broads[len(broads)-2])
 		w.bb.list_level_out()
 	}
 }

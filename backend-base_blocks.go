@@ -1,7 +1,6 @@
 package markout
 
 import (
-	"errors"
 	"io"
 )
 
@@ -150,14 +149,11 @@ func (bb *base_blocks) list_level_out() {
 	bb.list_level_broads = bb.list_level_broads[:n-1]
 }
 
-func (bb *base_blocks) list_level_info() (counters []int, broad bool) {
+func (bb *base_blocks) list_level_info() (counters []int, broads []bool) {
 	counters = bb.list_levels
-	broad = len(bb.list_level_broads) > 0 && bb.list_level_broads[len(bb.list_level_broads)-1]
+	broads = bb.list_level_broads
 	return
 }
-
-var errSectLevel = errors.New("markout: invalid section level (unpaired section level calls)")
-var errListLevel = errors.New("markout: invalid list level (unpaired list level calls)")
 
 func pick[T any](use_second bool, first, second T) T {
 	if use_second {

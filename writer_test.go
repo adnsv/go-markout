@@ -105,6 +105,19 @@ func ExampleNewMD() {
 	w.ListItem("last")
 	w.EndList()
 
+	w.Para("Broad:")
+	w.BeginList(Broad)
+	w.ListItem("broad1")
+	w.ListItem("broad2")
+	w.ListItem("broad3")
+	w.BeginList(Tight)
+	w.ListItem("tight1")
+	w.ListItem("tight2")
+	w.ListItem("tight3")
+	w.EndList()
+	w.ListItem("broad4")
+	w.EndList()
+
 	w.AttrSection(Attrs{Identifier: "ident", Classes: []string{"cls"}}, "Subsection")
 
 	w.Para(func(p Printer) {
@@ -121,6 +134,15 @@ func ExampleNewMD() {
 	w.EndTable()
 	w.Codeblock("go", "codeblock\ncontent")
 	w.EndSection()
+	/*w.List(Ordered|Broad, func(ListWriter) {
+		w.ListItem(func(w ParagraphWriter) {
+			w.Para("Advanced list items")
+			w.Para("Can be composed")
+			w.Para("From multiple paragraph blocks")
+		})
+		w.ListItem("Second item")
+	})
+	*/
 	w.Close()
 	out := buf.String()
 	fmt.Println(out)
@@ -137,6 +159,20 @@ func ExampleNewMD() {
 	//   1. subitem1
 	//   2. <em>subitem2</em>
 	// - last
+	//
+	// Broad:
+	//
+	// - broad1
+	//
+	// - broad2
+	//
+	// - broad3
+	//
+	//   - tight1
+	//   - tight2
+	//   - tight3
+	//
+	// - broad4
 	//
 	// ## Subsection {#ident .cls}
 	//
@@ -179,6 +215,14 @@ func ExampleNewHTML() {
 	w.EndSection()
 	w.EndSection()
 	w.Codeblock("go", "codeblock\ncontent")
+	w.List(Ordered|Broad, func(ListWriter) {
+		w.ListItem(func(w ParagraphWriter) {
+			w.Para("Advanced list items")
+			w.Para("Can be composed")
+			w.Para("From multiple paragraph blocks")
+		})
+		w.ListItem("Second item")
+	})
 	w.Close()
 	out := buf.String()
 	fmt.Println(out)
@@ -219,6 +263,13 @@ func ExampleNewHTML() {
 	// codeblock
 	// content
 	// </pre>
+	//
+	// <ol>
+	//   <li><p>Advanced list items</p>
+	//     <p>Can be composed</p>
+	//     <p>From multiple paragraph blocks</p></li>
+	//   <li><p>Second item</p></li>
+	// </ol>
 	//
 	// </body>
 	// </html>

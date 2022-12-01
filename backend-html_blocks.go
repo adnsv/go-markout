@@ -53,7 +53,7 @@ func (bb *html_blocks) list_title(s RawContent) {
 	bb.want_nextln()
 }
 
-func (bb *html_blocks) list_level_start(counters []int) {
+func (bb *html_blocks) list_level_start(counters []int, _ bool) {
 	if bb.enabled() {
 		n := len(counters) - 1
 		bb.putblock_ex(n, pick(counters[n] >= 0, "<ul>", "<ol>"), []byte{}, "")
@@ -61,7 +61,7 @@ func (bb *html_blocks) list_level_start(counters []int) {
 	bb.want_nextln()
 }
 
-func (bb *html_blocks) list_level_done(counters []int) {
+func (bb *html_blocks) list_level_done(counters []int, _ bool) {
 	if bb.enabled() {
 		n := len(counters) - 1
 		bb.putblock_ex(n, pick(counters[n] >= 0, "</ul>", "</ol>"), []byte{}, "")

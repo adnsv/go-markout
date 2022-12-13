@@ -2,6 +2,7 @@ package markout
 
 import (
 	"bytes"
+	"fmt"
 	"strings"
 
 	"golang.org/x/exp/slices"
@@ -11,6 +12,7 @@ const want_backslash_escaped = "\\`*_{}[]()#+-.!<>"
 
 type md_inlines struct {
 	base_inlines
+	html_links   bool
 	pending_link *RawContent
 }
 
@@ -121,13 +123,21 @@ func (ii *md_inlines) end_styled(b *bytes.Buffer) {
 	}
 }
 func (ii *md_inlines) begin_link(b *bytes.Buffer, url RawContent) {
-	b.WriteByte('[')
+	if ii.html_links {
+		fmt.Fprintf(b, "<a href=\"%s\">", url)
+	} else {
+		b.WriteByte('[')
+	}
 	ii.pending_link = &url
 }
 func (ii *md_inlines) end_link(b *bytes.Buffer) {
-	b.WriteString("](")
-	b.Write(*ii.pending_link)
-	b.WriteByte(')')
+	if ii.html_links {
+		b.WriteString("</a>")
+	} else {
+		b.WriteString("](")
+		b.Write(*ii.pending_link)
+		b.WriteByte(')')
+	}
 	ii.pending_link = nil
 }
 func (ii *md_inlines) simple_link(b *bytes.Buffer, caption RawContent, url RawContent) {

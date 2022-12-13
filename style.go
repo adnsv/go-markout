@@ -10,6 +10,10 @@ func URL(url string) link_wrapper {
 	return link_wrapper{url: url}
 }
 
+func Code(s string) codespan {
+	return codespan(s)
+}
+
 // SingleQuoted creates a wrapper for single quoted inline spans.
 func SingleQuoted(a any) style_wrapper {
 	return style_wrapper{sty: SingleQuotedStyle, content: a}
@@ -54,6 +58,9 @@ const (
 // RawContent is the the sequence of bytes that is written out to a target
 // 'as-is'. No additional scrambling or escaping is performed.
 type RawContent []byte
+
+// Codespan formats inline span
+type codespan string
 
 type link_wrapper struct {
 	caption any

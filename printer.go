@@ -212,6 +212,9 @@ func print_any(p Printer, a any) error {
 	case RawContent:
 		p.WriteRawBytes(v)
 		return nil
+	case codespan:
+		p.CodeString(string(v))
+		return nil
 	case link_wrapper:
 		p.SimpleLink(v.caption, v.url)
 		return nil

@@ -3,6 +3,7 @@ package markout
 import (
 	"bytes"
 	"strconv"
+	"strings"
 
 	"github.com/adnsv/go-markout/wcwidth"
 )
@@ -19,7 +20,7 @@ func (bb *txt_blocks) para(s RawContent) {
 	bb.want_emptyln()
 }
 
-func (bb *txt_blocks) heading(counters []int, s RawContent) {
+func (bb *txt_blocks) heading(counters []int, s RawContent, _ *Attrs) {
 	if bb.enabled() {
 		level := len(counters)
 
@@ -56,30 +57,54 @@ func (bb *txt_blocks) list_title(s RawContent) {
 	bb.want_nextln()
 }
 
-func (bb *txt_blocks) list_level_start(counters []int) {
+func (bb *txt_blocks) list_level_start(counters []int, from_broad bool) {
+	if from_broad {
+		bb.want_emptyln()
+	}
 }
 
-func (bb *txt_blocks) list_level_done(counters []int) {
-	if len(counters) == 1 {
+func (bb *txt_blocks) list_level_done(counters []int, to_broad bool) {
+	if len(counters) == 1 || to_broad {
+		bb.want_emptyln()
+	} else {
+		bb.eols = 1
+	}
+}
+
+func (bb *txt_blocks) list_item(counters []int, broad bool, s ...RawContent) {
+	if bb.enabled() {
+		level := len(counters)
+		counter := counters[level-1]
+
+		var ln RawContent
+		if len(s) > 0 {
+			ln = s[0]
+		}
+
+		var ind int
+		if counter < 0 {
+			// unordered
+			bb.putblock_ex(level-1, bb.listitem_prefix, ln, "")
+			ind = len(bb.listitem_prefix)
+		} else {
+			// ordered
+			num := strconv.FormatInt(int64(counter), 10) + ". "
+			bb.putblock_ex(level-1, num, ln, "")
+			ind = len(num)
+		}
+		if len(s) > 1 {
+			ind_str := strings.Repeat(" ", ind)
+			for _, ln = range s[1:] {
+				bb.want_emptyln()
+				bb.putblock_ex(level-1, ind_str, ln, "")
+			}
+		}
+	}
+	if broad {
 		bb.want_emptyln()
 	} else {
 		bb.want_nextln()
 	}
-}
-
-func (bb *txt_blocks) list_item(counters []int, s RawContent) {
-	if bb.enabled() {
-		level := len(counters)
-		counter := counters[level-1]
-		if counter < 0 {
-			// unordered
-			bb.putblock_ex(level-1, bb.listitem_prefix, s, "")
-		} else {
-			// ordered
-			bb.putblock_ex(level-1, strconv.FormatInt(int64(counter), 10)+". ", s, "")
-		}
-	}
-	bb.want_nextln()
 }
 
 func (bb *txt_blocks) end_table() {

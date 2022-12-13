@@ -2,7 +2,10 @@ package markout
 
 import (
 	"bytes"
+	"fmt"
+	"sort"
 	"strconv"
+	"strings"
 )
 
 type md_blocks struct {
@@ -14,13 +17,35 @@ func (bb *md_blocks) para(s RawContent) {
 	bb.want_emptyln()
 }
 
-func (bb *md_blocks) heading(counters []int, s RawContent) {
+func (bb *md_blocks) heading(counters []int, s RawContent, aa *Attrs) {
 	if bb.enabled() {
 		level := len(counters)
 		b := bytes.Buffer{}
 		wrepeat(&b, level, []byte("########"))
 		b.WriteByte(' ')
 		b.Write(s)
+		if aa != nil {
+			segments := []string{}
+			if aa.Identifier != "" {
+				segments = append(segments, "#"+aa.Identifier)
+			}
+			for _, c := range aa.Classes {
+				segments = append(segments, "."+c)
+			}
+			if len(aa.KeyVals) > 0 {
+				kvs := []string{}
+				for k, v := range aa.KeyVals {
+					kvs = append(kvs, fmt.Sprintf("%s=%s", k, v))
+				}
+				sort.Strings(kvs)
+				segments = append(segments, kvs...)
+			}
+			if len(segments) > 0 {
+				b.WriteString(" {")
+				b.WriteString(strings.Join(segments, " "))
+				b.WriteByte('}')
+			}
+		}
 		bb.putblock(b.Bytes())
 	}
 	bb.want_emptyln()
@@ -31,30 +56,54 @@ func (bb *md_blocks) list_title(s RawContent) {
 	bb.want_emptyln()
 }
 
-func (bb *md_blocks) list_level_start(counters []int) {
+func (bb *md_blocks) list_level_start(counters []int, from_broad bool) {
 }
 
-func (bb *md_blocks) list_level_done(counters []int) {
-	if len(counters) == 1 {
+func (bb *md_blocks) list_level_done(counters []int, to_broad bool) {
+	if len(counters) == 1 || to_broad {
 		bb.want_emptyln()
 	} else {
 		bb.want_nextln()
 	}
 }
 
-func (bb *md_blocks) list_item(counters []int, s RawContent) {
+func (bb *md_blocks) list_item(counters []int, broad bool, s ...RawContent) {
 	if bb.enabled() {
 		level := len(counters)
 		counter := counters[level-1]
+
+		var ln RawContent
+		if len(s) > 0 {
+			ln = s[0]
+		} else {
+			ln = []byte{' '}
+		}
+
+		var ind int
 		if counter < 0 {
 			// unordered
-			bb.putblock_ex(level-1, "- ", s, "")
+			const prefix = "- "
+			bb.putblock_ex(level-1, prefix, ln, "")
+			ind = len(prefix)
 		} else {
 			// ordered
-			bb.putblock_ex(level-1, strconv.FormatInt(int64(counter), 10)+". ", s, "")
+			num := strconv.FormatInt(int64(counter), 10) + ". "
+			bb.putblock_ex(level-1, num, ln, "")
+			ind = len(num)
+		}
+		if len(s) > 1 {
+			ind_str := strings.Repeat(" ", ind)
+			for _, ln = range s[1:] {
+				bb.want_emptyln()
+				bb.putblock_ex(level-1, ind_str, ln, "")
+			}
 		}
 	}
-	bb.want_nextln()
+	if broad {
+		bb.want_emptyln()
+	} else {
+		bb.want_nextln()
+	}
 }
 
 func (bb *md_blocks) end_table() {

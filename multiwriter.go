@@ -62,6 +62,18 @@ func (w *MultiWriter) BeginSectionf(format string, args ...any) {
 	}
 }
 
+func (w *MultiWriter) BeginAttrSection(aa Attrs, a any) {
+	for t := range w.targets {
+		t.BeginAttrSection(aa, a)
+	}
+}
+
+func (w *MultiWriter) BeginAttrSectionf(aa Attrs, format string, args ...any) {
+	for t := range w.targets {
+		t.BeginAttrSectionf(aa, format, args...)
+	}
+}
+
 func (w *MultiWriter) EndSection() {
 	for t := range w.targets {
 		t.EndSection()
@@ -77,6 +89,18 @@ func (w *MultiWriter) Section(a any) {
 func (w *MultiWriter) Sectionf(format string, args ...any) {
 	for t := range w.targets {
 		t.Sectionf(format, args...)
+	}
+}
+
+func (w *MultiWriter) AttrSection(aa Attrs, a any) {
+	for t := range w.targets {
+		t.AttrSection(aa, a)
+	}
+}
+
+func (w *MultiWriter) AttrSectionf(aa Attrs, format string, args ...any) {
+	for t := range w.targets {
+		t.AttrSectionf(aa, format, args...)
 	}
 }
 
@@ -98,15 +122,9 @@ func (w *MultiWriter) EndTable() {
 	}
 }
 
-func (w *MultiWriter) BeginUList() {
+func (w *MultiWriter) BeginList(flags ListFlags) {
 	for t := range w.targets {
-		t.BeginUList()
-	}
-}
-
-func (w *MultiWriter) BeginOList() {
-	for t := range w.targets {
-		t.BeginOList()
+		t.BeginList(flags)
 	}
 }
 
@@ -156,23 +174,12 @@ func (w *MultiWriter) Table(columns []any, rows func(cb TableRowWriter)) {
 	rows(on_row)
 }
 
-func (w *MultiWriter) OList(items func(ListWriter)) {
+func (w *MultiWriter) List(flags ListFlags, items func(ListWriter)) {
 	if items == nil {
 		return
 	}
 	for t := range w.targets {
-		t.BeginOList()
-		defer t.EndList()
-	}
-	items(w)
-}
-
-func (w *MultiWriter) UList(items func(ListWriter)) {
-	if items == nil {
-		return
-	}
-	for t := range w.targets {
-		t.BeginUList()
+		t.BeginList(flags)
 		defer t.EndList()
 	}
 	items(w)

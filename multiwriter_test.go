@@ -16,7 +16,7 @@ func ExampleNewMultiWriter() {
 
 	w := Writer(multi_w)
 	w.ListTitle("List:")
-	w.UList(func(li ListWriter) {
+	w.List(Unordered, func(li ListWriter) {
 		li.ListItem("item 1")
 		li.ListItem("item 2")
 	})

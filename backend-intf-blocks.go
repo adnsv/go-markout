@@ -22,7 +22,7 @@ type blocks interface {
 	close()
 	para(RawContent)
 
-	heading(counters []int, s RawContent)
+	heading(counters []int, s RawContent, aa *Attrs)
 	sect_level_in()
 	sect_level_out()
 	sect_counters() []int
@@ -32,12 +32,12 @@ type blocks interface {
 	end_table()
 
 	list_title(RawContent)
-	list_level_in(int) // initial counter 0 for ordered, -1 for unordered
+	list_level_in(initial int, broad bool) // initial counter 0 for ordered, -1 for unordered
 	list_level_out()
-	list_counters() []int
-	list_item(counters []int, s RawContent)
-	list_level_start(counters []int)
-	list_level_done(counters []int)
+	list_level_info() (counters []int, broads []bool)
+	list_item(counters []int, broad bool, s ...RawContent)
+	list_level_start(counters []int, from_broad bool)
+	list_level_done(counters []int, to_broad bool)
 
 	codeblock(lang string, s RawContent)
 }

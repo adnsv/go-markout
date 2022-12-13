@@ -1,17 +1,17 @@
 package markout
 
 import (
-	"errors"
 	"io"
 )
 
 type base_blocks struct {
-	out             io.Writer
-	disable_counter int
-	eols            int   // number of eols pending
-	sect_levels     []int // section level counters
-	list_levels     []int // list level counters (-1 for unordered levels)
-	table           table_grid
+	out               io.Writer
+	disable_counter   int
+	eols              int   // number of eols pending
+	sect_levels       []int // section level counters
+	list_levels       []int // list level counters (-1 for unordered levels)
+	list_level_broads []bool
+	table             table_grid
 }
 
 func (bb *base_blocks) current_mode() bmode {
@@ -138,21 +138,22 @@ func (bb *base_blocks) sect_counters() []int {
 	return bb.sect_levels
 }
 
-func (bb *base_blocks) list_level_in(initial int) {
+func (bb *base_blocks) list_level_in(initial int, broad bool) {
 	bb.list_levels = append(bb.list_levels, initial)
+	bb.list_level_broads = append(bb.list_level_broads, broad)
 }
 
 func (bb *base_blocks) list_level_out() {
 	n := len(bb.list_levels)
 	bb.list_levels = bb.list_levels[:n-1]
+	bb.list_level_broads = bb.list_level_broads[:n-1]
 }
 
-func (bb *base_blocks) list_counters() []int {
-	return bb.list_levels
+func (bb *base_blocks) list_level_info() (counters []int, broads []bool) {
+	counters = bb.list_levels
+	broads = bb.list_level_broads
+	return
 }
-
-var errSectLevel = errors.New("markout: invalid section level (unpaired section level calls)")
-var errListLevel = errors.New("markout: invalid list level (unpaired list level calls)")
 
 func pick[T any](use_second bool, first, second T) T {
 	if use_second {

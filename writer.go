@@ -12,6 +12,8 @@ type SectionWriter = interface {
 	// counter. Each BeginSection() call must be followed by matching EndSection()
 	BeginSection(a any)
 	BeginSectionf(format string, args ...any)
+	BeginAttrSection(aa Attrs, a any)
+	BeginAttrSectionf(aa Attrs, format string, args ...any)
 
 	// EndSection decrements section level counter.
 	EndSection()
@@ -19,6 +21,8 @@ type SectionWriter = interface {
 	// Section writes section heading without incrementing section level counter.
 	Section(a any)
 	Sectionf(format string, args ...any)
+	AttrSection(aa Attrs, a any)
+	AttrSectionf(aa Attrs, format string, args ...any)
 }
 
 // TableRowWriter is a callback for writing table rows.
@@ -45,6 +49,15 @@ type TableWriter = interface {
 	Table(columns []any, rows func(callback TableRowWriter))
 }
 
+type ListFlags uint
+
+const (
+	Unordered = ListFlags(0)
+	Tight     = ListFlags(0)
+	Ordered   = ListFlags(1)
+	Broad     = ListFlags(2)
+)
+
 // ListWriter is an interface for writing items and child lists into list
 // blocks.
 type ListWriter interface {
@@ -52,11 +65,10 @@ type ListWriter interface {
 	ListTitle(a any)
 	ListTitlef(format string, args ...any)
 
-	// BeginOList and BeginUList begins a list block (ordered or unourdered). If
-	// writer is already in list mode, this begins a child list. Each BeginList
-	// must be matched with EndList.
-	BeginOList()
-	BeginUList()
+	// BeginList begins a list block (ordered or unourdered). If writer is
+	// already in list mode, this begins a child list. Each BeginList must be
+	// matched with EndList.
+	BeginList(ListFlags)
 	EndList()
 
 	// ListItem writes an item into the list block. Must be called within the
@@ -68,8 +80,7 @@ type ListWriter interface {
 
 	// Callback-based list writing methods that automatically wrap items
 	// BeginList/EndList blocks.
-	OList(func(ListWriter))
-	UList(func(ListWriter))
+	List(ListFlags, func(ListWriter))
 }
 
 type CodeblockWriter interface {
@@ -90,6 +101,13 @@ type Writer interface {
 
 	DisableOutput()
 	EnableOutput()
+}
+
+// Attr can be used to add id, classes, and attributes to section headings.
+type Attrs struct {
+	Identifier string
+	Classes    []string
+	KeyVals    map[string]string
 }
 
 // Quotation marks

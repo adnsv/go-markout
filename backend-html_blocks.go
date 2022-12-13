@@ -2,6 +2,9 @@ package markout
 
 import (
 	"fmt"
+	"sort"
+	"strconv"
+	"strings"
 )
 
 type html_blocks struct {
@@ -14,10 +17,30 @@ func (bb *html_blocks) para(s RawContent) {
 	bb.want_emptyln()
 }
 
-func (bb *html_blocks) heading(counters []int, s RawContent) {
+func (bb *html_blocks) heading(counters []int, s RawContent, aa *Attrs) {
 	level := len(counters)
-	t := fmt.Sprintf("<h%d>", level)
-	bb.putblock_ex(0, t, s, "</"+t[1:])
+	tagname := "h" + strconv.Itoa(level)
+	t := fmt.Sprintf("<%s", tagname)
+	if aa != nil {
+		if aa.Identifier != "" {
+			t += fmt.Sprintf(" id=\"%s\"", aa.Identifier)
+		}
+		if len(aa.Classes) > 0 {
+			t += fmt.Sprintf(" class=\"%s\"", strings.Join(aa.Classes, " "))
+		}
+		if len(aa.KeyVals) > 0 {
+			kk := make([]string, 0, len(aa.KeyVals))
+			for k := range aa.KeyVals {
+				kk = append(kk, k)
+			}
+			sort.Strings(kk)
+			for _, k := range kk {
+				t += fmt.Sprintf(" %s=\"%s\"", k, aa.KeyVals[k])
+			}
+		}
+	}
+	t += ">"
+	bb.putblock_ex(0, t, s, "</"+tagname+">")
 	bb.want_emptyln()
 }
 
@@ -30,7 +53,7 @@ func (bb *html_blocks) list_title(s RawContent) {
 	bb.want_nextln()
 }
 
-func (bb *html_blocks) list_level_start(counters []int) {
+func (bb *html_blocks) list_level_start(counters []int, _ bool) {
 	if bb.enabled() {
 		n := len(counters) - 1
 		bb.putblock_ex(n, pick(counters[n] >= 0, "<ul>", "<ol>"), []byte{}, "")
@@ -38,7 +61,7 @@ func (bb *html_blocks) list_level_start(counters []int) {
 	bb.want_nextln()
 }
 
-func (bb *html_blocks) list_level_done(counters []int) {
+func (bb *html_blocks) list_level_done(counters []int, _ bool) {
 	if bb.enabled() {
 		n := len(counters) - 1
 		bb.putblock_ex(n, pick(counters[n] >= 0, "</ul>", "</ol>"), []byte{}, "")
@@ -50,10 +73,33 @@ func (bb *html_blocks) list_level_done(counters []int) {
 	}
 }
 
-func (bb *html_blocks) list_item(counters []int, s RawContent) {
+func (bb *html_blocks) list_item(counters []int, broad bool, s ...RawContent) {
 	if bb.enabled() {
 		n := len(counters) - 1
-		bb.putblock_ex(n+1, "<li>", s, "</li>")
+		switch len(s) {
+		case 0:
+			bb.putblock_ex(n+1, "<li>", nil, "</li>")
+		default:
+			for i, b := range s {
+				before := ""
+				after := ""
+				if broad || len(s) > 1 {
+					before = "<p>"
+					after = "</p>"
+				}
+				lvl := n + 1
+				if i == 0 {
+					before = "<li>" + before
+				} else {
+					lvl++
+				}
+				if i == len(s)-1 {
+					after += "</li>"
+				}
+				bb.putblock_ex(lvl, before, b, after)
+			}
+		}
+
 	}
 	bb.want_nextln()
 }

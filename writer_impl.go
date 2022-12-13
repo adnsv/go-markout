@@ -1,6 +1,8 @@
 package markout
 
 import (
+	"bytes"
+	"fmt"
 	"strings"
 
 	"golang.org/x/exp/slices"
@@ -20,7 +22,9 @@ func (w *writer_impl) CloseEx(postscriptum func(ParagraphWriter)) {
 	}
 
 	for w.bb.current_mode() == mlist {
-		w.bb.list_level_done(w.bb.list_counters())
+		cc, bb := w.bb.list_level_info()
+		into_broad := len(bb) >= 1 || bb[len(bb)-1]
+		w.bb.list_level_done(cc, into_broad)
 		w.bb.list_level_out()
 	}
 
@@ -60,21 +64,21 @@ func (w *writer_impl) do_printf(format string, args ...any) RawContent {
 	return w.p.buf.Bytes()
 }
 
-func (w *writer_impl) handle_section(s RawContent) {
+func (w *writer_impl) handle_section(s RawContent, aa *Attrs) {
 	w.bb.check_mode(mflow)
 	cc := w.bb.sect_counters()
 	cc[len(cc)-1]++
-	w.bb.heading(cc, s)
+	w.bb.heading(cc, s, aa)
 }
 
-func (w *writer_impl) handle_listitem(s RawContent) {
+func (w *writer_impl) handle_listitem(s ...RawContent) {
 	w.bb.check_mode(mlist)
-	cc := w.bb.list_counters()
+	cc, broads := w.bb.list_level_info()
 	n := len(cc) - 1
 	if cc[n] >= 0 {
 		cc[n]++
 	}
-	w.bb.list_item(cc, s)
+	w.bb.list_item(cc, broads[n], s...)
 }
 
 func (w *writer_impl) Para(a any) {
@@ -91,14 +95,28 @@ func (w *writer_impl) Paraf(format string, args ...any) {
 
 func (w *writer_impl) BeginSection(a any) {
 	if w.bb.check_mode(mflow) {
-		w.handle_section(w.do_print(a))
+		w.handle_section(w.do_print(a), nil)
 		w.bb.sect_level_in()
 	}
 }
 
 func (w *writer_impl) BeginSectionf(format string, args ...any) {
 	if w.bb.check_mode(mflow) {
-		w.handle_section(w.do_printf(format, args...))
+		w.handle_section(w.do_printf(format, args...), nil)
+		w.bb.sect_level_in()
+	}
+}
+
+func (w *writer_impl) BeginAttrSection(aa Attrs, a any) {
+	if w.bb.check_mode(mflow) {
+		w.handle_section(w.do_print(a), &aa)
+		w.bb.sect_level_in()
+	}
+}
+
+func (w *writer_impl) BeginAttrSectionf(aa Attrs, format string, args ...any) {
+	if w.bb.check_mode(mflow) {
+		w.handle_section(w.do_printf(format, args...), &aa)
 		w.bb.sect_level_in()
 	}
 }
@@ -111,13 +129,25 @@ func (w *writer_impl) EndSection() {
 
 func (w *writer_impl) Section(a any) {
 	if w.bb.check_mode(mflow) {
-		w.handle_section(w.do_print(a))
+		w.handle_section(w.do_print(a), nil)
 	}
 }
 
 func (w *writer_impl) Sectionf(format string, args ...any) {
 	if w.bb.check_mode(mflow) {
-		w.handle_section(w.do_printf(format, args...))
+		w.handle_section(w.do_printf(format, args...), nil)
+	}
+}
+
+func (w *writer_impl) AttrSection(aa Attrs, a any) {
+	if w.bb.check_mode(mflow) {
+		w.handle_section(w.do_print(a), &aa)
+	}
+}
+
+func (w *writer_impl) AttrSectionf(aa Attrs, format string, args ...any) {
+	if w.bb.check_mode(mflow) {
+		w.handle_section(w.do_printf(format, args...), &aa)
 	}
 }
 
@@ -161,23 +191,53 @@ func (w *writer_impl) ListTitlef(format string, args ...any) {
 	}
 }
 
-func (w *writer_impl) BeginOList() {
+func (w *writer_impl) BeginList(f ListFlags) {
 	if w.bb.check_mode(mflow | mlist) {
-		w.bb.list_level_in(0)
-		w.bb.list_level_start(w.bb.list_counters())
+		init := -1
+		if f&Ordered != 0 {
+			init = 0
+		}
+		w.bb.list_level_in(init, f&Broad != 0)
+		cc, broads := w.bb.list_level_info()
+		w.bb.list_level_start(cc, len(broads) >= 2 && broads[len(broads)-2])
 	}
 }
 
-func (w *writer_impl) BeginUList() {
-	if w.bb.check_mode(mflow | mlist) {
-		w.bb.list_level_in(-1)
-		w.bb.list_level_start(w.bb.list_counters())
-	}
+type multi_block_sink struct {
+	ii         inlines
+	url_filter url_filter
+	blocks     []RawContent
+}
+
+func (b *multi_block_sink) Para(a any) {
+	buf := &bytes.Buffer{}
+	to_buffer(buf, b.ii, b.url_filter, a)
+	b.blocks = append(b.blocks, buf.Bytes())
+}
+
+func (b *multi_block_sink) Paraf(format string, args ...any) {
+	buf := &bytes.Buffer{}
+	scratch := bytes.Buffer{}
+	b.ii.put_str(&scratch, format)
+	fmt_raw := scratch.String()
+	args_raw := fmt_args(&scratch, b.ii, b.url_filter, args...)
+	fmt.Fprintf(buf, fmt_raw, args_raw...)
+	b.blocks = append(b.blocks, buf.Bytes())
 }
 
 func (w *writer_impl) ListItem(a any) {
 	if w.bb.check_mode(mlist) {
-		w.handle_listitem(w.do_print(a))
+		if ml, ok := a.(func(w ParagraphWriter)); ok {
+			blocks := multi_block_sink{
+				ii:         w.p.ii,
+				url_filter: w.p.url_filter,
+			}
+			ml(&blocks)
+			w.handle_listitem(blocks.blocks...)
+
+		} else {
+			w.handle_listitem(w.do_print(a))
+		}
 	}
 }
 
@@ -189,7 +249,8 @@ func (w *writer_impl) ListItemf(format string, args ...any) {
 
 func (w *writer_impl) EndList() {
 	if w.bb.check_mode(mlist) {
-		w.bb.list_level_done(w.bb.list_counters())
+		cc, broads := w.bb.list_level_info()
+		w.bb.list_level_done(cc, len(broads) >= 2 && broads[len(broads)-2])
 		w.bb.list_level_out()
 	}
 }
@@ -210,23 +271,12 @@ func (w *writer_impl) Table(columns []any, rows func(TableRowWriter)) {
 	}
 }
 
-func (w *writer_impl) OList(f func(iw ListWriter)) {
+func (w *writer_impl) List(flags ListFlags, f func(iw ListWriter)) {
 	if w.bb.check_mode(mflow|mlist) && w.bb.enabled() {
 		if f == nil {
 			return
 		}
-		w.BeginOList()
-		defer w.EndList()
-		f(w)
-	}
-}
-
-func (w *writer_impl) UList(f func(iw ListWriter)) {
-	if w.bb.check_mode(mflow|mlist) && w.bb.enabled() {
-		if f == nil {
-			return
-		}
-		w.BeginUList()
+		w.BeginList(flags)
 		defer w.EndList()
 		f(w)
 	}

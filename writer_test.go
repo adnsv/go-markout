@@ -178,9 +178,9 @@ func ExampleNewMD() {
 	//
 	// Inline formatting: "<em>Hello</em>, <strong>World\!</strong>"
 	//
-	// th | thead
-	// ---|------
-	// tcell | tcell
+	// |th | thead
+	// |---|------
+	// |tcell | tcell
 	//
 	// ```go
 	// codeblock

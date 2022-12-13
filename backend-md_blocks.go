@@ -111,8 +111,8 @@ func (bb *md_blocks) end_table() {
 		ww := bb.table.measure_cells(bb.table[0], nil)
 
 		eol := []byte{'\n'}
-		rdecor := table_decor{nil, []byte("-|-"), nil}
-		cdecor := table_decor{nil, []byte(" | "), nil}
+		rdecor := table_decor{[]byte{'|'}, []byte("-|-"), nil}
+		cdecor := table_decor{[]byte{'|'}, []byte(" | "), nil}
 		rule := []byte("--------")
 
 		bb.do_nextline()

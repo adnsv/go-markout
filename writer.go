@@ -189,11 +189,13 @@ type MDOptions struct {
 	PutBOM         bool
 	QuotationMarks string // pipe-separated single and double quotes (defaults to '|'|"|")
 	URLFilter      url_filter
+	HTMLLinks      bool
 }
 
 // NewMD creates a new markout writer targeting markdown output.
 func NewMD(out io.Writer, opts MDOptions) Writer {
 	ii := &md_inlines{}
+	ii.html_links = opts.HTMLLinks
 	ii.setup_quotation_marks(opts.QuotationMarks)
 	bb := &md_blocks{}
 	bb.out = out

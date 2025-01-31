@@ -301,6 +301,10 @@ func fmt_args(scratch *bytes.Buffer, ii inlines, uf url_filter, args ...any) []a
 			p.WriteRawBytes(v)
 			r[i] = scratch.String()
 			continue
+		case codespan:
+			p.CodeString(string(v))
+			r[i] = scratch.String()
+			continue
 		case link_wrapper:
 			p.SimpleLink(v.caption, v.url)
 			r[i] = scratch.String()
